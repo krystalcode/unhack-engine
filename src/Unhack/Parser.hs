@@ -19,7 +19,9 @@ trimIssues :: [String] -> [String]
 trimIssues xs = map (takeWhile (/=')') . tail . dropWhile (/='(')) xs
 
 extractProperties :: String -> Issue
-extractProperties issue = Issue { title = propertyList !! 0
+extractProperties issue = Issue { projectId = "AU8urrJaVfWpfA7E_XUN"
+                                , commit = "fa253171b27f2c31b933f63a9be439922b6f9da8"
+                                , title = propertyList !! 0
                                 , kind = propertyList !! 1
                                 , priority = propertyList !! 2
                                 , labels = propertyList !! 3 }
