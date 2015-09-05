@@ -45,7 +45,8 @@ analyse [file, filterValue] = do
                               inpStr <- hGetContents inh
                               let issues = parseString inpStr
                               let filteredIssues = filterIssues issues filterValue
-                              putStr (unlines . map displayIssue $ filteredIssues)
+                              let updatedIssues = bulkSetProperty issues "file" file
+                              putStr (unlines . map displayIssue $ updatedIssues)
                               hClose inh
 
 -- Store issues to ElasticSearch.

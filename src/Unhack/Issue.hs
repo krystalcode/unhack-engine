@@ -4,6 +4,7 @@ module Unhack.Issue
        ( indexIssue
        , displayIssue
        , accessProperty
+       , bulkSetProperty
        , Issue(..)
        ) where
 
@@ -34,7 +35,7 @@ indexIssue issue = indexDocument ES.index issueMapping defaultIndexDocumentSetti
 -}
 displayIssue :: Issue -> String
 displayIssue issue = unlines (["{"] `union` indentedProperties `union` ["}"])
-                     where properties = ["title", "kind", "priority", "labels"]
+                     where properties = ["file", "title", "kind", "priority", "labels"]
                            renderedProperties = map (displayProperty issue) properties
                            nonEmptyProperties = filter (\x -> x /= "") renderedProperties
                            indentedProperties = map ("    " ++) nonEmptyProperties
@@ -47,10 +48,17 @@ displayIssue issue = unlines (["{"] `union` indentedProperties `union` ["}"])
   )
 -}
 accessProperty :: Issue -> String -> String
+accessProperty issue "file" = file issue
 accessProperty issue "title" = title issue
 accessProperty issue "kind" = kind issue
 accessProperty issue "priority" = priority issue
 accessProperty issue "labels" = labels issue
+
+bulkSetProperty :: [Issue] -> String -> String -> [Issue]
+bulkSetProperty issues propertyKey propertyValue
+    | propertyKey == "file" = map (setFile propertyValue) issues
+    | propertyKey == "commit" = map (setCommit propertyValue) issues
+    | propertyKey == "projectId" = map (setProjectId propertyValue) issues
 
 -- Functions for internal use.
 issueMapping = MappingName "issue"
@@ -64,6 +72,7 @@ issueMapping = MappingName "issue"
 -}
 data Issue = Issue { projectId :: String
                    , commit :: String
+                   , file :: String
                    , title :: String
                    , kind :: String
                    , priority :: String
@@ -71,8 +80,17 @@ data Issue = Issue { projectId :: String
                    } deriving (Show)
 
 instance ToJSON Issue where
-    toJSON (Issue projectId commit title kind priority labels) = object ["projectId" .= projectId, "commit" .= commit, "title" .= title, "type" .= kind, "priority" .= priority, "labels" .= labels]
+    toJSON (Issue projectId commit file title kind priority labels) = object ["projectId" .= projectId, "commit" .= commit, "file" .= file, "title" .= title, "type" .= kind, "priority" .= priority, "labels" .= labels]
 
 displayProperty :: Issue -> String -> String
 displayProperty issue property = if text == "" then "" else property ++ ": " ++ text
                                  where text = accessProperty issue property
+
+setFile :: String -> Issue -> Issue
+setFile fileValue issue = issue { file = fileValue }
+
+setCommit :: String -> Issue -> Issue
+setCommit commitValue issue = issue { commit = commitValue }
+
+setProjectId :: String -> Issue -> Issue
+setProjectId projectIdValue issue = issue { projectId = projectIdValue }
