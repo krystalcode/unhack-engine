@@ -29,12 +29,35 @@ extractProperties issue = Issue { projectId = "AU8urrJaVfWpfA7E_XUN"
                                 , kind = propertyList !! 1
                                 , priority = propertyList !! 2
                                 , labels = propertyList !! 3 }
-                  where issueProperties = ["title", "type", "priority", "labels"]
-                        propertyList = map (extractProperty issue) issueProperties
+                  where title = extractTitle issue
+                        optionalPropertyKeys = ["type", "priority", "labels"]
+                        optionalProperties = map (extractProperty issue) optionalPropertyKeys
+                        propertyList = [title] `union` optionalProperties
 
+{-
+  @Issue(
+    "Allow for different regexps per property e.g. do not allow special
+    characters in type, priority and labels etc.",
+    type="bug",
+    priority="normal"
+  )
+-}
 extractProperty :: String -> String -> String
 extractProperty issue property = stripNewLines . trimProperty $ (issue =~ pattern :: String)
                 where pattern = property ++ "=\"([^\"]+)\""
+
+extractTitle :: String -> String
+extractTitle issue = if titleWithKey /= "" then titleWithKey else titleWithoutKey
+                     where titleWithKey = extractProperty issue "title"
+                           {-
+                             @Issue(
+                               "Reuse extractProperty when it accepts a pattern as an argument",
+                               type="improvement",
+                               priority="low",
+                               labels="refactoring"
+                             )
+                           -}
+                           titleWithoutKey = stripNewLines . trimProperty $ (issue =~ "\"([^\"]+)\"" :: String)
 
 stripNewLines :: String -> String
 stripNewLines [] = []
