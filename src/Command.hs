@@ -45,7 +45,7 @@ analyse [file, filterValue] = do
                               inpStr <- hGetContents inh
                               let issues = parseString inpStr
                               let filteredIssues = filterIssues issues filterValue
-                              let updatedIssues = bulkSetProperty issues "file" file
+                              let updatedIssues = bulkSetProperty filteredIssues "file" file
                               putStr (unlines . map displayIssue $ updatedIssues)
                               hClose inh
 
