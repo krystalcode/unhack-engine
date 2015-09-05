@@ -64,7 +64,8 @@ store [file] = do
                outh <- openFile "issues" WriteMode
                inpStr <- hGetContents inh
                let issues = parseString inpStr
-               responses <- sequence . map (withBH' . indexIssue) $ issues
+               let updatedIssues = bulkSetProperty issues "file" file
+               responses <- sequence . map (withBH' . indexIssue) $ updatedIssues
                hPutStr outh (unlines . map show $ responses)
                hClose inh
                hClose outh
