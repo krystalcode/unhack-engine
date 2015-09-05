@@ -40,5 +40,7 @@ applyFilters filters issue = [] /= filter (applyFilter issue) filters
   )
 -}
 applyFilter :: Issue -> String -> Bool
-applyFilter issue filterValue = accessProperty issue property == value
+applyFilter issue filterValue = if property == "type"
+                                then accessProperty issue "kind" == value
+                                else accessProperty issue property == value
                                 where [property, value] = splitOn "=" filterValue
