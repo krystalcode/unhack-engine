@@ -20,3 +20,6 @@ unhack:
         - title:    Move ElasticSearch configuration to unhack.yml
           type:     bug
           priority: normal
+        - title:    Support project schemas e.g. list of file types and locations
+          type:     feature
+          priority: normal

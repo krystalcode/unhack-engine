@@ -7,6 +7,14 @@ module Unhack.Issue
        , Issue(..)
        ) where
 
+{-
+  @Issue(
+    "Decouple Issue from ElasticSearch",
+    type="improvement",
+    priority="low",
+    labels="modularity"
+  )
+-}
 import Data.List
 import Database.Bloodhound
 import Data.Aeson
@@ -16,6 +24,14 @@ import qualified Unhack.ElasticSearch as ES
 indexIssue :: (ToJSON doc, MonadBH m) => doc -> m Reply
 indexIssue issue = indexDocument ES.index issueMapping defaultIndexDocumentSettings issue (DocId "")
 
+{-
+  @Issue(
+    "Add spaces so that all property values align with the value of the property
+    with the longest key e.g. 'title' value aligns with 'priority' value etc.",
+    type="improvement",
+    priority="low"
+  )
+-}
 displayIssue :: Issue -> String
 displayIssue issue = unlines (["{"] `union` indentedProperties `union` ["}"])
                      where properties = ["title", "kind", "priority", "labels"]

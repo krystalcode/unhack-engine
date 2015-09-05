@@ -22,6 +22,13 @@ regexAllMatches input = getAllTextMatches $ input =~ "@Issue\\(([\\s\\S]+?)\\)" 
 trimIssues :: [String] -> [String]
 trimIssues xs = map (takeWhile (/=')') . tail . dropWhile (/='(')) xs
 
+{-
+  @Issue(
+    "Return Nothing if an issue does not have a title",
+    type="bug",
+    priority="low"
+  )
+-}
 extractProperties :: String -> Issue
 extractProperties issue = Issue { projectId = "AU8urrJaVfWpfA7E_XUN"
                                 , commit = "fa253171b27f2c31b933f63a9be439922b6f9da8"
