@@ -35,6 +35,13 @@ analyse [file, filterText] = do
                              hClose inh
 
 -- Store issues to ElasticSearch.
+{-
+  @Issue(
+    "Write the API in a storage-agnostic way",
+    type="feature",
+    priority="low"
+  )
+-}
 store :: [String] -> IO ()
 store [file] = do
                inh <- openFile file ReadMode
