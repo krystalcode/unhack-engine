@@ -39,7 +39,8 @@ analyse [file, filterValue] = do
   @Issue(
     "Write the API in a storage-agnostic way",
     type="feature",
-    priority="low"
+    priority="low",
+    labels="modularity"
   )
 -}
 store :: [String] -> IO ()
