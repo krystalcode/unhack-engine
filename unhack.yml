@@ -1,4 +1,14 @@
 unhack:
+    project:
+        name: krystalcode/unhack-core
+        host: github
+        url:  https://github.com/krystalcode/unhack-core
+
+    database:
+        type: elasticsearch
+        host: http://elk:9200
+        name: unhack
+
     issues:
         - title:    Import only functions needed in all import statements
           type:     improvement
