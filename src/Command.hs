@@ -26,13 +26,13 @@ dispatch =  [ ("analyse", analyse)
 
 -- Display issues on CLI.
 analyse :: [String] -> IO ()
-analyse [file, filterText] = do
-                             inh <- openFile file ReadMode
-                             inpStr <- hGetContents inh
-                             let issues = parseString inpStr
-                             let filteredIssues = filterIssues issues filterText
-                             putStr (unlines . map displayIssue $ filteredIssues)
-                             hClose inh
+analyse [file, filterValue] = do
+                              inh <- openFile file ReadMode
+                              inpStr <- hGetContents inh
+                              let issues = parseString inpStr
+                              let filteredIssues = filterIssues issues filterValue
+                              putStr (unlines . map displayIssue $ filteredIssues)
+                              hClose inh
 
 -- Store issues to ElasticSearch.
 {-
