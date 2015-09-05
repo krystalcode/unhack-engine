@@ -1,5 +1,5 @@
 module Unhack.Parser
-       ( parseFile
+       ( parseString
        ) where
 
 import Unhack.Issue
@@ -8,8 +8,9 @@ import Data.List.Split
 import Text.Regex.PCRE
 
 -- Public API.
-parseFile :: [String] -> [Issue]
-parseFile issues = map extractProperties issues
+parseString :: String -> [Issue]
+parseString input = map extractProperties issues
+            where issues = extractIssues input
 
 -- Functions for internal use.
 extractIssues :: String -> [String]
