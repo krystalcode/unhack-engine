@@ -1,0 +1,12 @@
+unhack:
+    issues:
+        - title:    Import only functions needed in all import statements
+          type:     improvement
+          priority: normal
+          labels:   performance
+        - title:    Support loading issues from the unhack.yml configuration file
+          type:     feature
+          priority: normal
+        - title:    Move ElasticSearch configuration to unhack.yml
+          type:     bug
+          priority: normal
