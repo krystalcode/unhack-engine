@@ -1,12 +1,21 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Unhack.Issue
-       ( Issue(..)
+       ( indexIssue
+       , Issue(..)
        ) where
 
+import Data.List
+import Database.Bloodhound
 import Data.Aeson
 import qualified Unhack.ElasticSearch as ES
 
+-- Public API.
+indexIssue :: (ToJSON doc, MonadBH m) => doc -> m Reply
+indexIssue issue = indexDocument ES.index issueMapping defaultIndexDocumentSettings issue (DocId "")
+
+-- Functions for internal use.
 issueMapping = MappingName "issue"
-indexIssue = withBH' $ indexDocument ES.index issueMapping defaultIndexDocumentSettings
 
 data Issue = Issue { projectId :: String
                    , commit :: String
@@ -17,4 +26,4 @@ data Issue = Issue { projectId :: String
                    } deriving (Show)
 
 instance ToJSON Issue where
-    toJSON (Issue title kind priority labels) = object ["title" .= title, "type" .= kind, "priority" .= priority, "labels" .= labels]
+    toJSON (Issue projectId commit title kind priority labels) = object ["projectId" .= projectId, "commit" .= commit, "title" .= title, "type" .= kind, "priority" .= priority, "labels" .= labels]

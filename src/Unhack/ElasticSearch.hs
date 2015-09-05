@@ -13,7 +13,7 @@ import Network.HTTP.Client
 
 withBH' = withBH defaultManagerSettings server
 
-createIndex = withBH' $ createIndex indexSettings index
+createIndex' = withBH' $ createIndex indexSettings index
 
 server = Server "http://elk:9200"
 index = IndexName "unhack"
