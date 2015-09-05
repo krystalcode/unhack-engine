@@ -29,3 +29,6 @@ unhack:
         - title:    Support project schemas e.g. list of file types and locations
           type:     feature
           priority: normal
+        - title:    Detect and store the line in the file the issue is located
+          type:     feature
+          priority: normal
