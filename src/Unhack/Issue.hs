@@ -39,6 +39,13 @@ accessProperty issue "labels" = labels issue
 -- Functions for internal use.
 issueMapping = MappingName "issue"
 
+{-
+  @Issue(
+    "Add file property",
+    type="improvement",
+    priority="high"
+  )
+-}
 data Issue = Issue { projectId :: String
                    , commit :: String
                    , title :: String

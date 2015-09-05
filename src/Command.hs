@@ -13,6 +13,13 @@ import Unhack.Parser
 import Unhack.Issue
 import Unhack.Filter
 
+{-
+  @Issue(
+    "Use cmdargs package for building a better command line tool",
+    type="improvement",
+    priority="normal"
+  )
+-}
 main = do
        (command:args) <- getArgs
        let (Just action) = lookup command dispatch
@@ -25,6 +32,13 @@ dispatch =  [ ("analyse", analyse)
             ]
 
 -- Display issues on CLI.
+{-
+  @Issue(
+    "Accept paths as well as argument instead of individual files only",
+    type="feature",
+    priority="high"
+  )
+-}
 analyse :: [String] -> IO ()
 analyse [file, filterValue] = do
                               inh <- openFile file ReadMode
