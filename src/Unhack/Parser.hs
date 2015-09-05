@@ -3,6 +3,9 @@ module Unhack.Parser
        ) where
 
 import Unhack.Issue
+import Data.List
+import Data.List.Split
+import Text.Regex.PCRE
 
 -- Public API.
 parseFile :: [String] -> [Issue]
