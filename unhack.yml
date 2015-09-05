@@ -9,6 +9,12 @@ unhack:
         host: http://elk:9200
         name: unhack
 
+    schema:
+        custom:
+            include:
+                - src
+            extensions: hs
+
     issues:
         - title:    Import only functions needed in all import statements
           type:     improvement
