@@ -3,6 +3,7 @@ module Unhack.Parser
        ) where
 
 import Unhack.Issue
+import Unhack.Commit
 import Data.List
 import Data.List.Split
 import Text.Regex.PCRE
@@ -31,7 +32,8 @@ trimIssues xs = map (takeWhile (/=')') . tail . dropWhile (/='(')) xs
 -}
 extractProperties :: String -> Issue
 extractProperties issue = Issue { projectId = "AU8urrJaVfWpfA7E_XUN"
-                                , commit = "fa253171b27f2c31b933f63a9be439922b6f9da8"
+                                , commit = Commit { hash = ""
+                                                  , time = "" }
                                 , file = ""
                                 , title = propertyList !! 0
                                 , kind = propertyList !! 1

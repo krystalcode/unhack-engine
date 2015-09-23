@@ -5,6 +5,7 @@ module Unhack.Issue
        , displayIssue
        , accessProperty
        , bulkSetProperty
+       , bulkSetCommit
        , Issue(..)
        ) where
 
@@ -16,6 +17,7 @@ module Unhack.Issue
     labels="modularity"
   )
 -}
+import Unhack.Commit
 import Data.List
 import Database.Bloodhound
 import Data.Aeson
@@ -57,8 +59,10 @@ accessProperty issue "labels" = labels issue
 bulkSetProperty :: [Issue] -> String -> String -> [Issue]
 bulkSetProperty issues propertyKey propertyValue
     | propertyKey == "file" = map (setFile propertyValue) issues
-    | propertyKey == "commit" = map (setCommit propertyValue) issues
     | propertyKey == "projectId" = map (setProjectId propertyValue) issues
+
+bulkSetCommit :: [Issue] -> Commit -> [Issue]
+bulkSetCommit issues commit = map (setCommit commit) issues
 
 -- Functions for internal use.
 issueMapping = MappingName "issue"
@@ -71,7 +75,7 @@ issueMapping = MappingName "issue"
   )
 -}
 data Issue = Issue { projectId :: String
-                   , commit :: String
+                   , commit :: Commit
                    , file :: String
                    , title :: String
                    , kind :: String
@@ -80,7 +84,7 @@ data Issue = Issue { projectId :: String
                    } deriving (Show)
 
 instance ToJSON Issue where
-    toJSON (Issue projectId commit file title kind priority labels) = object ["projectId" .= projectId, "commit" .= commit, "file" .= file, "title" .= title, "type" .= kind, "priority" .= priority, "labels" .= labels]
+    toJSON (Issue projectId commit file title kind priority labels) = object ["projectId" .= projectId, "commit.hash" .= (hash commit), "commit.time" .= (time commit), "file" .= file, "title" .= title, "type" .= kind, "priority" .= priority, "labels" .= labels]
 
 displayProperty :: Issue -> String -> String
 displayProperty issue property = if text == "" then "" else property ++ ": " ++ text
@@ -89,7 +93,7 @@ displayProperty issue property = if text == "" then "" else property ++ ": " ++ 
 setFile :: String -> Issue -> Issue
 setFile fileValue issue = issue { file = fileValue }
 
-setCommit :: String -> Issue -> Issue
+setCommit :: Commit -> Issue -> Issue
 setCommit commitValue issue = issue { commit = commitValue }
 
 setProjectId :: String -> Issue -> Issue
