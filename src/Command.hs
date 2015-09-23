@@ -12,6 +12,7 @@ import Unhack.ElasticSearch
 import Unhack.Parser
 import Unhack.Issue
 import Unhack.Filter
+import Unhack.Git
 
 {-
   @Issue(
@@ -29,6 +30,7 @@ main = do
 dispatch :: [(String, [String] -> IO ())]
 dispatch =  [ ("analyse", analyse)
             , ("store", store)
+            , ("gitStoreFull", gitStoreFull)
             ]
 
 -- Display issues on CLI.
@@ -69,3 +71,18 @@ store [file] = do
                hPutStr outh (unlines . map show $ responses)
                hClose inh
                hClose outh
+
+gitStoreFull :: [String] -> IO ()
+gitStoreFull [path] = do
+                   -- Get the list of all commits.
+                   commitsIO <- listCommitsIO path
+                   let commits = listCommits commitsIO
+                   -- Get the list of all files per commit.
+                   filesIO <- sequence . map (lsTreeIO path) $ commits
+                   let trees = map unlinesTree filesIO
+                   -- Get issues for all trees.
+                   contentsIO <- sequence . map (showFileIO path) $ concat trees
+                   let issues = parseTrees contentsIO
+                   -- Send all issues to ElasticSearch.
+                   responses <- sequence . map (withBH' . indexIssue) $ issues
+                   putStr (unlines . map show $ responses)
