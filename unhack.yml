@@ -1,34 +1,7 @@
-unhack:
-    project:
-        name: krystalcode/unhack-core
-        host: github
-        url:  https://github.com/krystalcode/unhack-core
+project:
+    name: krystalcode/unhack-core
 
-    database:
-        type: elasticsearch
-        host: http://elk:9200
-        name: unhack
-
-    schema:
-        custom:
-            include:
-                - src
-            extensions: hs
-
-    issues:
-        - title:    Import only functions needed in all import statements
-          type:     improvement
-          priority: normal
-          labels:   performance
-        - title:    Support loading issues from the unhack.yml configuration file
-          type:     feature
-          priority: normal
-        - title:    Move ElasticSearch configuration to unhack.yml
-          type:     bug
-          priority: normal
-        - title:    Support project schemas e.g. list of file types and locations
-          type:     feature
-          priority: normal
-        - title:    Detect and store the line in the file the issue is located
-          type:     feature
-          priority: normal
+schema:
+    include: []
+    exclude: []
+    extensions: ["hs"]
