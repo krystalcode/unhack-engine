@@ -1,3 +1,6 @@
 # Ignore Haskell compilation files.
 *.hi
 *.o
+
+# Ignore Haskell Stack development files.
+/.stack-work
