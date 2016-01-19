@@ -4,4 +4,4 @@ project:
 schema:
     include: []
     exclude: []
-    extensions: ["hs"]
+    extensions: ["hs", "cabal", "yml", "yaml"]
