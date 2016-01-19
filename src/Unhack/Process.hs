@@ -7,9 +7,15 @@ import System.Exit (ExitCode(ExitSuccess))
 import System.IO (hGetContents, hSetEncoding, utf8)
 import System.Process (createProcess, CreateProcess(..), StdStream(CreatePipe), shell, waitForProcess)
 
+
 -- Public API.
 
 {-
+    @Issue(
+        "Use Text everywhere instead of String"
+        type="task"
+        priority="normal"
+    )
     @Issue(
         "Is there any drawback in setting utf8 encoding on all processes?"
         type="bug"
