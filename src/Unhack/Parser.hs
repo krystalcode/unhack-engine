@@ -23,13 +23,6 @@ regexAllMatches input = getAllTextMatches $ input =~ "@Issue\\(([\\s\\S]+?)\\)" 
 trimIssues :: [String] -> [String]
 trimIssues xs = map (takeWhile (/=')') . tail . dropWhile (/='(')) xs
 
-{-
-  @Issue(
-    "Return Nothing if an issue does not have a title",
-    type="bug",
-    priority="low"
-  )
--}
 extractProperties :: String -> Issue
 extractProperties issue =
     emptyIssue { title = propertyList !! 0
@@ -54,7 +47,7 @@ extractProperty issue property = stripNewLines . trimProperty $ (issue =~ patter
                 where pattern = property ++ "=\"([^\"]+)\""
 
 extractTitle :: String -> String
-extractTitle issue = if titleWithKey /= "" then titleWithKey else titleWithoutKey
+extractTitle issue = if validTitle /= "" then validTitle else issue
                      where titleWithKey = extractProperty issue "title"
                            {-
                              @Issue(
@@ -65,6 +58,7 @@ extractTitle issue = if titleWithKey /= "" then titleWithKey else titleWithoutKe
                              )
                            -}
                            titleWithoutKey = stripNewLines . trimProperty $ (issue =~ "\"([^\"]+)\"" :: String)
+                           validTitle = if titleWithKey /= "" then titleWithKey else titleWithoutKey
 
 stripNewLines :: String -> String
 stripNewLines [] = []
