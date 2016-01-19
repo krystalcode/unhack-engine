@@ -1,21 +1,32 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Unhack.Commit
-       ( stringToCommit
-       , Commit(..)
+       ( Commit(..)
+       , emptyCommit
+       , textToCommit
        ) where
 
-import Data.List.Split
+import qualified Data.Text as T (concat, filter, splitAt, splitOn, unpack, Text)
 
-stringToCommit :: String -> Commit
-stringToCommit input = Commit { hash = (commitAsList input) !! 0
-                              -- Convert to exact ISO 8601 as expected by ElasticSearch.
-                              , time = day ++ "T" ++ timeAndTimezone }
-    where commitAsList string = splitOn "_" string
-          date = filter (/=' ') $ (commitAsList input) !! 1
-          (day, timeAndTimezone) = splitAt 10 date
-          
 
-data Commit = Commit { hash :: String
-                     , time :: String
+-- Public API.
+
+data Commit = Commit { hash :: T.Text
+                     , time :: T.Text
                      } deriving (Show)
+
+emptyCommit = Commit { hash = ""
+                     , time = "" }
+
+-- Converts text to a Commit record.
+-- The text needs to be in one of the following supported formats:
+-- - "git_log": Text returned by the "git log" command in the format used in
+--   Unhack.Git.Commit.
+textToCommit :: T.Text -> T.Text -> Commit
+textToCommit commitText "git_log" = Commit { hash = commitList !! 0
+                                                 -- Convert to ISO 8601.
+                                               , time = T.concat [day, "T", timeAndTimezone] }
+    where commitList = T.splitOn "_" commitText
+          date = T.filter (/= ' ') $ commitList !! 1
+          (day, timeAndTimezone) = T.splitAt 10 date
+textToCommit commitText format = error . T.unpack $ T.concat ["The requested text format \"", format, "\" is not supported for converting text to a Commit record."]
