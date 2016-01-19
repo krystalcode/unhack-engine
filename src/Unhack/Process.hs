@@ -1,4 +1,4 @@
-module Unhack.Git.Process
+module Unhack.Process
        ( lazyProcess
        , strictProcess ) where
 
