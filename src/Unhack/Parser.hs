@@ -8,6 +8,14 @@ import Data.List
 import Data.List.Split
 import Text.Regex.PCRE
 
+{-
+  @Issue(
+    "Use Text instead of String everywhere in the Parser",
+    type="task",
+    priority="normal"
+  )
+-}
+
 -- Public API.
 parseString :: String -> [Issue]
 parseString input = map extractProperties issues
