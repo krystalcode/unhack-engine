@@ -31,18 +31,15 @@ trimIssues xs = map (takeWhile (/=')') . tail . dropWhile (/='(')) xs
   )
 -}
 extractProperties :: String -> Issue
-extractProperties issue = Issue { projectId = "AU8urrJaVfWpfA7E_XUN"
-                                , commit = Commit { hash = ""
-                                                  , time = "" }
-                                , file = ""
-                                , title = propertyList !! 0
-                                , kind = propertyList !! 1
-                                , priority = propertyList !! 2
-                                , labels = propertyList !! 3 }
-                  where title = extractTitle issue
-                        optionalPropertyKeys = ["type", "priority", "labels"]
-                        optionalProperties = map (extractProperty issue) optionalPropertyKeys
-                        propertyList = [title] `union` optionalProperties
+extractProperties issue =
+    emptyIssue { title = propertyList !! 0
+               , kind = propertyList !! 1
+               , priority = propertyList !! 2
+               , labels = propertyList !! 3 }
+    where title = extractTitle issue
+          optionalPropertyKeys = ["type", "priority", "labels"]
+          optionalProperties = map (extractProperty issue) optionalPropertyKeys
+          propertyList = [title] ++ optionalProperties
 
 {-
   @Issue(
