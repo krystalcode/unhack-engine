@@ -1,12 +1,16 @@
 module Unhack.Parser
        ( parseString
+       , parseFileString
+       , parseFileString'
+       , parseCommitFileString
+       , parseCommitFileString'
        ) where
 
+import qualified Data.Text as T (unpack, Text)
+import Data.List (intercalate)
+import Text.Regex.PCRE ((=~), getAllTextMatches)
 import Unhack.Issue
 import Unhack.Commit
-import Data.List
-import Data.List.Split
-import Text.Regex.PCRE
 
 {-
   @Issue(
@@ -20,6 +24,20 @@ import Text.Regex.PCRE
 parseString :: String -> [Issue]
 parseString input = map extractProperties issues
             where issues = extractIssues input
+
+parseFileString :: T.Text -> String -> [Issue]
+parseFileString file input = bulkSetProperty issues "file" (T.unpack file)
+    where issues = parseString input
+
+parseFileString' :: (T.Text, String) -> [Issue]
+parseFileString' (file, input) = parseFileString file input
+
+parseCommitFileString :: Commit -> T.Text -> String -> [Issue]
+parseCommitFileString commit file input = bulkSetCommit issues commit
+    where issues = parseFileString file input
+
+parseCommitFileString' :: (Commit, T.Text, String) -> [Issue]
+parseCommitFileString' (commit, file, input) = parseCommitFileString commit file input
 
 -- Functions for internal use.
 extractIssues :: String -> [String]
@@ -71,7 +89,7 @@ extractTitle issue = if validTitle /= "" then validTitle else issue
 stripNewLines :: String -> String
 stripNewLines [] = []
 stripNewLines property = intercalate " " . map (trimLineBeginning) $ splitLines
-              where splitLines = splitOn "\n" property
+              where splitLines = lines property
 
 trimLineBeginning :: String -> String
 trimLineBeginning [] = []
