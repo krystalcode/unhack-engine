@@ -1,8 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Unhack.Process
        ( lazyProcess
        , strictProcess ) where
 
 import Control.Exception (evaluate)
+import qualified Data.Text as T (pack, unpack, Text)
 import System.Exit (ExitCode(ExitSuccess))
 import System.IO (hGetContents, hSetEncoding, utf8)
 import System.Process (createProcess, CreateProcess(..), StdStream(CreatePipe), shell, waitForProcess)
@@ -12,18 +15,13 @@ import System.Process (createProcess, CreateProcess(..), StdStream(CreatePipe), 
 
 {-
     @Issue(
-        "Use Text everywhere instead of String"
-        type="task"
-        priority="normal"
-    )
-    @Issue(
         "Is there any drawback in setting utf8 encoding on all processes?"
         type="bug"
         priority="low"
     )
 -}
 
-lazyProcess :: String -> FilePath -> IO (String)
+lazyProcess :: T.Text -> FilePath -> IO (T.Text)
 lazyProcess command directory = do
     (_, Just hout, Just herr, procHandle) <- createProcess $ createCommand command directory
     hSetEncoding hout utf8
@@ -32,10 +30,10 @@ lazyProcess command directory = do
     stdOut   <- hGetContents hout
     stdErr   <- hGetContents herr
     if exitCode == ExitSuccess
-        then return stdOut
+        then return  $ T.pack stdOut
         else error $ stdErr ++ stdOut
 
-strictProcess :: String -> FilePath -> IO (String)
+strictProcess :: T.Text -> FilePath -> IO (T.Text)
 strictProcess command directory = do
     (_, Just hout, Just herr, procHandle) <- createProcess $ createCommand command directory
     hSetEncoding hout utf8
@@ -46,11 +44,11 @@ strictProcess command directory = do
     evaluate (length stdErr)
     exitCode <- waitForProcess procHandle
     if exitCode == ExitSuccess
-        then return stdOut
+        then return $ T.pack stdOut
         else error $ stdErr ++ stdOut
 
 
 -- Functions for internal use.
 
-createCommand :: String -> FilePath -> CreateProcess
-createCommand command directory = (shell command){std_out = CreatePipe, std_err = CreatePipe, cwd = Just directory}
+createCommand :: T.Text -> FilePath -> CreateProcess
+createCommand command directory = (shell $ T.unpack command){std_out = CreatePipe, std_err = CreatePipe, cwd = Just directory}

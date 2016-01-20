@@ -21,22 +21,22 @@ import Unhack.Commit
 -}
 
 -- Public API.
-parseString :: String -> [Issue]
+parseString :: T.Text -> [Issue]
 parseString input = map extractProperties issues
-            where issues = extractIssues input
+            where issues = extractIssues $ T.unpack input
 
-parseFileString :: T.Text -> String -> [Issue]
+parseFileString :: T.Text -> T.Text -> [Issue]
 parseFileString file input = bulkSetProperty issues "file" (T.unpack file)
     where issues = parseString input
 
-parseFileString' :: (T.Text, String) -> [Issue]
+parseFileString' :: (T.Text, T.Text) -> [Issue]
 parseFileString' (file, input) = parseFileString file input
 
-parseCommitFileString :: Commit -> T.Text -> String -> [Issue]
+parseCommitFileString :: Commit -> T.Text -> T.Text -> [Issue]
 parseCommitFileString commit file input = bulkSetCommit issues commit
     where issues = parseFileString file input
 
-parseCommitFileString' :: (Commit, T.Text, String) -> [Issue]
+parseCommitFileString' :: (Commit, T.Text, T.Text) -> [Issue]
 parseCommitFileString' (commit, file, input) = parseCommitFileString commit file input
 
 -- Functions for internal use.

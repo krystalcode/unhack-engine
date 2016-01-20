@@ -5,7 +5,7 @@ module Unhack.Git.Commit
        , logTextToCommits
        ) where
 
-import qualified Data.Text as T (lines, unpack, Text)
+import qualified Data.Text as T (concat, lines, pack, unpack, Text)
 import Unhack.Commit
 import Unhack.Process
 
@@ -14,11 +14,11 @@ import Unhack.Process
 
 -- Gets the list of commits as text by executing the "git log" command for the
 -- requested branch.
-logCommitsText :: FilePath -> T.Text -> Int -> IO (String)
+logCommitsText :: FilePath -> T.Text -> Int -> IO (T.Text)
 logCommitsText directory branch nbCommits = lazyProcess command directory
-    where command = "git log " ++ (T.unpack branch) ++ " --pretty=\"format:%H_%ai\"" ++ nbCommitsOption
+    where command = T.concat ["git log ", branch, " --pretty=\"format:%H_%ai\"", nbCommitsOption]
           nbCommitsOption = case nbCommits of 0 -> ""
-                                              _ -> " -n " ++ (show nbCommits)
+                                              _ -> T.concat [" -n ", T.pack (show nbCommits)]
 
 -- Takes text containing a list of commits, in the format returned by the
 -- "git log" command, and it converts it into a list of Commit records.

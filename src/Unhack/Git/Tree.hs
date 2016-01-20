@@ -15,11 +15,11 @@ import Unhack.Process
 -- Public API.
 
 -- Get the full git tree on a specific commit.
-commitTree :: FilePath -> Commit -> IO (String)
+commitTree :: FilePath -> Commit -> IO (T.Text)
 commitTree directory commit = strictProcess command directory
-    where command = "git ls-tree --full-tree --name-only -r " ++ (T.unpack $ hash commit)
+    where command = T.concat ["git ls-tree --full-tree --name-only -r ", (hash commit)]
 
-commitTree' :: FilePath -> Commit -> IO (Commit, String)
+commitTree' :: FilePath -> Commit -> IO (Commit, T.Text)
 commitTree' directory commit = do
     tree <- commitTree directory commit
     return (commit, tree)
