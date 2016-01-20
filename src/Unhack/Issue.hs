@@ -1,31 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Unhack.Issue
-       ( indexIssue
-       , displayIssue
-       , accessProperty
+       ( accessProperty
        , bulkSetProperty
        , bulkSetCommit
+       , displayIssue
+       , emptyIssue
        , Issue(..)
        ) where
 
-{-
-  @Issue(
-    "Decouple Issue from ElasticSearch",
-    type="improvement",
-    priority="low",
-    labels="modularity"
-  )
--}
 import Unhack.Commit
 import Data.List
-import Database.Bloodhound
 import Data.Aeson
-import qualified Unhack.ElasticSearch as ES
 
 -- Public API.
-indexIssue :: (ToJSON doc, MonadBH m) => doc -> m Reply
-indexIssue issue = indexDocument ES.index issueMapping defaultIndexDocumentSettings issue (DocId "")
 
 {-
   @Issue(
@@ -59,32 +47,50 @@ accessProperty issue "labels" = labels issue
 bulkSetProperty :: [Issue] -> String -> String -> [Issue]
 bulkSetProperty issues propertyKey propertyValue
     | propertyKey == "file" = map (setFile propertyValue) issues
-    | propertyKey == "projectId" = map (setProjectId propertyValue) issues
 
 bulkSetCommit :: [Issue] -> Commit -> [Issue]
 bulkSetCommit issues commit = map (setCommit commit) issues
 
 -- Functions for internal use.
-issueMapping = MappingName "issue"
 
-{-
-  @Issue(
-    "Add file property",
-    type="improvement",
-    priority="high"
-  )
--}
-data Issue = Issue { projectId :: String
-                   , commit :: Commit
+data Issue = Issue { commit :: Commit
+                   {-
+                     @Issue(
+                       "Support path hierarchy in file property",
+                       type="improvement",
+                       priority="high"
+                     )
+                   -}
                    , file :: String
                    , title :: String
                    , kind :: String
                    , priority :: String
+                   {-
+                     @Issue(
+                       "Labels should be an array of strings"
+                       type="bug"
+                       priority="high"
+                     )
+                   -}
                    , labels :: String
                    } deriving (Show)
 
+emptyIssue = Issue { commit   = emptyCommit
+                   , file     = ""
+                   , title    = ""
+                   , kind     = ""
+                   , priority = ""
+                   , labels   = "" }
+
 instance ToJSON Issue where
-    toJSON (Issue projectId commit file title kind priority labels) = object ["projectId" .= projectId, "commit.hash" .= (hash commit), "commit.time" .= (time commit), "file" .= file, "title" .= title, "type" .= kind, "priority" .= priority, "labels" .= labels]
+    toJSON (Issue commit file title kind priority labels) =
+        object [ "commit.hash" .= (hash commit)
+               , "commit.time" .= (time commit)
+               , "file" .= file
+               , "title" .= title
+               , "type" .= kind
+               , "priority" .= priority
+               , "labels" .= labels ]
 
 displayProperty :: Issue -> String -> String
 displayProperty issue property = if text == "" then "" else property ++ ": " ++ text
@@ -95,6 +101,3 @@ setFile fileValue issue = issue { file = fileValue }
 
 setCommit :: Commit -> Issue -> Issue
 setCommit commitValue issue = issue { commit = commitValue }
-
-setProjectId :: String -> Issue -> Issue
-setProjectId projectIdValue issue = issue { projectId = projectIdValue }
