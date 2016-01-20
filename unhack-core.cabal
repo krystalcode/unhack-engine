@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Unhack.Commit
                      , Unhack.Git.Commit
+                     , Unhack.Git.Contents
                      , Unhack.Git.Tree
                      , Unhack.Git.Fetch
                      , Unhack.Process
