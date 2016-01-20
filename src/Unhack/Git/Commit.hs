@@ -24,7 +24,7 @@ logCommitsText directory branch nbCommits = lazyProcess command directory
 -- "git log" command, and it converts it into a list of Commit records.
 logTextToCommits :: T.Text -> [Commit]
 logTextToCommits "" = []
-logTextToCommits input = map (textToCommit' "git_log_error") $ T.lines input
+logTextToCommits input = map (textToCommit' "git_log") $ T.lines input
 
 -- Functions for internal use.
 
