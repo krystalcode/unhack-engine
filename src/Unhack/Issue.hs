@@ -13,6 +13,14 @@ import Unhack.Commit
 import Data.List
 import Data.Aeson
 
+{-
+  @Issue(
+    "Use Text instead of String everywhere in the Issue module",
+    type="task",
+    priority="low"
+  )
+-}
+
 -- Public API.
 
 {-
