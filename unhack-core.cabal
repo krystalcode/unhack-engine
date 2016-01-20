@@ -20,9 +20,11 @@ library
                      , Unhack.Git.Contents
                      , Unhack.Git.Tree
                      , Unhack.Git.Fetch
+                     , Unhack.Issue
                      , Unhack.Parser
                      , Unhack.Process
-  build-depends:       base >= 4.7 && < 5
+  build-depends:       aeson >= 0.10.0.0 && < 1
+                     , base >= 4.7 && < 5
                      , process >= 1.2.3.0 && < 2
                      , regex-pcre >= 0.94.4 && < 1
                      , text >= 1.2.2.0 && < 2
