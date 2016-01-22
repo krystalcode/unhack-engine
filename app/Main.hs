@@ -11,7 +11,7 @@ import Unhack.Git.Contents
 import Unhack.Git.Tree
 import Unhack.Issue
 import Unhack.Parser
-import qualified Unhack.Storage.Config as USC
+import qualified Unhack.Storage.ElasticSearch.Config as USC
 
 {-
     @Issue(
