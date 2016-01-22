@@ -19,6 +19,18 @@ import Unhack.Parser
         priority="low"
         labels="ux"
     )
+    @Issue(
+        "Colorise command line output"
+        type="improvement"
+        priority="low"
+        labels="ux"
+    )
+    @Issue(
+        "Add configuration options for defining colors per property"
+        type="feature"
+        priority="low"
+        labels="ux"
+    )
 -}
 
 main = do
