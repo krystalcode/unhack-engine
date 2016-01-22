@@ -2,7 +2,7 @@
 
 module Main where
 
-import qualified Data.Text as T (Text)
+import qualified Data.Text as T (unpack, Text)
 import System.Console.CmdArgs.Implicit
 import System.Environment (getArgs, withArgs)
 import Unhack.Commit
@@ -11,6 +11,7 @@ import Unhack.Git.Contents
 import Unhack.Git.Tree
 import Unhack.Issue
 import Unhack.Parser
+import qualified Unhack.Storage.Config as USC
 
 {-
     @Issue(
@@ -36,7 +37,6 @@ import Unhack.Parser
 main = do
     args <- getArgs
     cmd <- getCmd args
-    print cmd
     case cmd of
         CmdGit{} -> runGit cmd
         CmdDisk{} -> runDisk cmd
@@ -95,6 +95,16 @@ runGit cmd = do
     let branch = cmdBranch cmd
     let includePatterns = cmdIncludePatterns cmd
     let excludePatterns = cmdExcludePatterns cmd
+    let output = cmdOutput cmd
+
+    case (output) of "storage" -> do
+                                  storageConfig <- USC.load $ cmdStorageConfigFile cmd
+                                  let storageType = USC.type' storageConfig
+                                  let storageHost = USC.host storageConfig
+                                  let storagePort = USC.port storageConfig
+                                  putStrLn $ "Setting the output to be sent to a storage engine of type \"" ++ (T.unpack storageType) ++ "\" ..."
+                     "screen" -> print "Setting the output to be printed on the screen ..."
+                     _ -> print $ "Setting the output to be written on the file \"" ++ (T.unpack output) ++ "\""
 
     {-
         @Issue(
@@ -179,11 +189,11 @@ data Cmd
         , cmdIncludePatterns :: [T.Text]   -- ^ the filename patterns to include, nothing = run on all files
         , cmdExcludePatterns :: [T.Text]   -- ^ the filename patterns to exclude, nothing = do not exclude any files
         , cmdConfigFile :: FilePath        -- ^ the path to the Unhack configuration file to use, nothing = unhack.y(a)ml in the Git root folder
-        , cmdStorage :: Bool               -- ^ whether to store the results to a database, nothing = FALSE
-        , cmdStorageConfigFile :: FilePath -- ^ the path to the storage configuration file, nothing = /etc/unhack/storage.yaml
+        , cmdOutput :: T.Text              -- ^ where should the result get printed e.g. screen, file, storage, nothing = screen
         , cmdStorageType :: T.Text         -- ^ the type of storage to send the results to
         , cmdStorageHost :: T.Text         -- ^ the host of the storage engine
         , cmdStoragePort :: Int            -- ^ the port that the storage engine listens to
+        , cmdStorageConfigFile :: FilePath -- ^ the path to the storage configuration file, nothing = /etc/unhack/storage.yaml
         }
     | CmdDisk
         { cmdPath :: FilePath              -- ^ the path to the folder on which to run Unhack, nothing = current working directory
@@ -205,11 +215,11 @@ mode = cmdArgsMode $ modes
         , cmdIncludePatterns = name' "include" &= typ "PATTERN" &= help "A list of filename patterns to include - defaults to including all files"
         , cmdExcludePatterns = name' "exclude" &= typ "PATTERN" &= help "A list of filename patterns to exclude - defaults to not exclude any files"
         , cmdConfigFile = name' "config-file" &= typFile &= help "The path to the Unhack configuration to use - defaults unhack.y(a)ml in the root folder of the repository"
-        , cmdStorage = name' "storage" &= typ "BOOLEAN" &= help "Whether to send the results to a storage enging - defaults to FALSE"
-        , cmdStorageConfigFile = name' "storage-config-file" &= typFile &= help "The path to the file with the storage configuration - defaults to /etc/unhack/storage.yaml"
+        , cmdOutput = name'' "output" "screen" &= typ "OUTPUT" &= help "Where to output the results (screen, file, storage)"
         , cmdStorageType = name' "storage-type" &= typ "TYPE" &= help "The type of the storage engine used. Supported types are 'elasticsearch'."
         , cmdStorageHost = name' "storage-host" &= typ "HOST" &= help "The host of the storage engine."
         , cmdStoragePort = name' "storage-port" &= typ "PORT" &= help "The port that the storage engine is listening to."
+        , cmdStorageConfigFile = name'' "storage-config-file" "/etc/unhack/storage.yaml" &= typFile &= help "The path to the file with the storage configuration - defaults to /etc/unhack/storage.yaml"
         } &= auto &= explicit &= name "git"
     , CmdDisk
         { cmdPath = name' "path" &= typ "FILE/DIR" &= help "The path to run Unhack on - defaults to the current working directory."
@@ -221,6 +231,7 @@ mode = cmdArgsMode $ modes
     ] &= program "unhack" &= verbosity
     &=  summary ("Unhack v0.1.0.0, (C) Dimitris Bozelos 2015-2016")
     where
-        name' xs = def &= explicit &= name xs
+        name' optionName = def &= explicit &= name optionName
+        name'' optionName defaultValue = defaultValue &= explicit &= name optionName
 
 instance Default T.Text where def = ""
