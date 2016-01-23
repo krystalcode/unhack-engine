@@ -12,6 +12,7 @@ import Unhack.Git.Tree
 import Unhack.Issue
 import Unhack.Parser
 import qualified Unhack.Storage.ElasticSearch.Config as USC
+import Unhack.Storage.ElasticSearch.Operations
 
 {-
     @Issue(
@@ -97,6 +98,17 @@ runGit cmd = do
     let excludePatterns = cmdExcludePatterns cmd
     let output = cmdOutput cmd
 
+    -- Load the storage configuration, if required, so that we detect any
+    -- problems before proceeding.
+    {-
+        @Issue(
+            "Keep the loaded configuration in the runGit scope so that we don't
+            have to load it again later on"
+            type="bug"
+            priority="low"
+            labels="performance"
+        )
+    -}
     case (output) of "storage" -> do
                                   storageConfig <- USC.load $ cmdStorageConfigFile cmd
                                   let storageType = USC.type' storageConfig
@@ -148,6 +160,23 @@ runGit cmd = do
 
     -- Get all issues for the files' contents.
     let issues = concat $ map parseCommitFileString' contents
+
+    -- Store all issues to ElasticSearch if the --output option is set to
+    -- "storage".
+    {-
+        @Issue(
+            "Handle response errors in ElasticSearch operations"
+            type="bug"
+            priority="normal"
+            labels="error handling"
+        )
+    -}
+    case (output) of "storage" -> do
+                                  storageConfig <- USC.load $ cmdStorageConfigFile cmd
+                                  putStrLn "Storing issues to Elastic Search ..."
+                                  response <- bulkIndexIssues storageConfig issues
+                                  print response
+                     _ -> putStr ""
 
     -- Print out all issues.
     putStr (unlines . map displayIssue $ issues)
