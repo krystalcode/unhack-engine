@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 
 module Unhack.Commit
        ( Commit(..)
@@ -6,14 +6,16 @@ module Unhack.Commit
        , textToCommit
        ) where
 
+import Data.Aeson
 import qualified Data.Text as T (concat, filter, splitAt, splitOn, unpack, Text)
+import GHC.Generics (Generic)
 
 
 -- Public API.
 
 data Commit = Commit { hash :: T.Text
                      , time :: T.Text
-                     } deriving (Show)
+                     } deriving (Generic, Show)
 
 emptyCommit = Commit { hash = ""
                      , time = "" }
@@ -30,3 +32,13 @@ textToCommit commitText "git_log" = Commit { hash = commitList !! 0
           date = T.filter (/= ' ') $ commitList !! 1
           (day, timeAndTimezone) = T.splitAt 10 date
 textToCommit commitText format = error . T.unpack $ T.concat ["The requested text format \"", format, "\" is not supported for converting text to a Commit record."]
+
+
+-- Functions/types for internal use.
+
+instance FromJSON Commit
+
+instance ToJSON Commit where
+    toJSON (Commit hash time) =
+        object [ "hash" .= hash
+               , "time" .= time ]

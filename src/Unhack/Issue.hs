@@ -92,8 +92,7 @@ emptyIssue = Issue { commit   = emptyCommit
 
 instance ToJSON Issue where
     toJSON (Issue commit file title kind priority labels) =
-        object [ "commit.hash" .= (hash commit)
-               , "commit.time" .= (time commit)
+        object [ "commit" .= commit
                , "file" .= file
                , "title" .= title
                , "type" .= kind
