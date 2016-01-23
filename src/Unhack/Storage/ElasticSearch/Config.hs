@@ -3,6 +3,7 @@
 module Unhack.Storage.ElasticSearch.Config
        ( load
        , StorageConfig(..)
+       , StorageIndexSettings(..)
        ) where
 
 {-
@@ -19,7 +20,7 @@ import qualified Data.ByteString.Char8 as BS (readFile)
 import Data.Maybe (fromJust)
 import qualified Data.Text as T (Text)
 import qualified Data.Yaml as Y (decode)
-import GHC.Generics -- (Generic)
+import GHC.Generics (Generic)
 
 -- Public API.
 
