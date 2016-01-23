@@ -6,6 +6,9 @@ resolver: lts-4.2
 # Local packages, usually specified by relative directory name
 packages:
 - '.'
+- location:
+    git: https://github.com/krystalcode/bloodhound.git
+    commit: 71fae64730aa614c188cb706d07340e425479280
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps: []
