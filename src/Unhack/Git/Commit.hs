@@ -1,12 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Unhack.Git.Commit
-       ( hashToCommitText
+       ( hashesToCommitsText
        , logCommitsText
        , logTextToCommits
        ) where
 
-import qualified Data.Text as T (concat, lines, pack, unpack, Text)
+import qualified Data.Text as T (concat, intercalate, lines, pack, unpack, Text)
 import Unhack.Commit
 import Unhack.Process
 
@@ -14,9 +14,10 @@ import Unhack.Process
 -- Public API.
 
 -- Gets a commit's text in the "git_log" format for the given commit hash.
-hashToCommitText :: FilePath -> T.Text -> IO (T.Text)
-hashToCommitText directory hash = lazyProcess command directory
-    where command = T.concat ["git show -s --format=%H_%ai ", hash]
+hashesToCommitsText :: FilePath -> [T.Text] -> IO (T.Text)
+hashesToCommitsText directory hashes = lazyProcess command directory
+    where command = T.concat ["git show -s --format=%H_%ai ", hashesText]
+          hashesText = T.intercalate " " hashes
 
 -- Gets the list of commits as text by executing the "git log" command for the
 -- requested branch.

@@ -94,7 +94,7 @@ runGit cmd = do
     -- Get options values.
     let directory = cmdPath cmd
     let branch = cmdBranch cmd
-    let commit = cmdCommit cmd
+    let commits = cmdCommits cmd
     let includePatterns = cmdIncludePatterns cmd
     let excludePatterns = cmdExcludePatterns cmd
     let output = cmdOutput cmd
@@ -139,11 +139,11 @@ runGit cmd = do
     -}
 
     -- Get the commits as required.
-    commits <- getCommits directory branch commit
+    commitsRecords <- getCommits directory branch commits
 
     -- Get the tree of files for the commit, filtered by inclusion and
     -- exclusion patterns.
-    trees <- mapM (commitTree' directory) commits
+    trees <- mapM (commitTree' directory) commitsRecords
     let files = map (treeValidFiles' includePatterns excludePatterns validExtensions) trees
 
     -- Get the contents of all files to be parsed.
@@ -181,21 +181,21 @@ runDisk cmd = print "Running the disk command."
 -- - The given commit, if the given commit is not "all".
 -- - Or, the latest commit on the given branch, if no commit was given.
 -- - Or, the HEAD, if no branch was given.
-getCommits :: FilePath -> T.Text -> T.Text -> IO ([Commit])
-getCommits directory branch "all" = do
+getCommits :: FilePath -> T.Text -> [T.Text] -> IO ([Commit])
+getCommits directory branch ["all"] = do
     commitsText <- logCommitsText directory branch 0
     return $ logTextToCommits commitsText
 
-getCommits directory "" "" = do
-    commitsText <- hashToCommitText directory "HEAD"
+getCommits directory "" [] = do
+    commitsText <- hashesToCommitsText directory ["HEAD"]
     return $ logTextToCommits commitsText
 
-getCommits directory branch "" = do
+getCommits directory branch [] = do
     commitsText <- logCommitsText directory branch 1
     return $ logTextToCommits commitsText
 
-getCommits directory _ commit = do
-    commitsText <- hashToCommitText directory commit
+getCommits directory _ commits = do
+    commitsText <- hashesToCommitsText directory commits
     return $ logTextToCommits commitsText
 
 -- The following command line handling system has roughly been taken from HLint
@@ -226,8 +226,8 @@ data Cmd
         { cmdPath :: FilePath              -- ^ the path to the folder on which to run Unhack, nothing = current working directory
         , cmdRecursive :: Bool             -- ^ whether to run Unhack recursively on all folders below the given path, nothing = True
         , cmdRoot :: Bool                  -- ^ whether to run Unhack on the root folder of the repository, if different than the given path, nothing = True
-        , cmdBranch :: T.Text              -- ^ the branch on which to run Unhack on, nothing = the currently checked out branch, if any
-        , cmdCommit :: T.Text              -- ^ the commit on which to run Unhack on, nothing = the latest commit on the checked out branch, if any
+        , cmdBranch :: T.Text              -- ^ the branch on which to run Unhack on, nothing = the commits will resolve to HEAD
+        , cmdCommits :: [T.Text]           -- ^ a list of commits on which to run Unhack on, nothing = the latest commit on the given branch, or the HEAD if no branch
         , cmdProject :: [T.Text]           -- ^ the project identification used when sending the results to a storage engine, nothing = the address of the origin
         , cmdIncludePatterns :: [T.Text]   -- ^ the filename patterns to include, nothing = run on all files
         , cmdExcludePatterns :: [T.Text]   -- ^ the filename patterns to exclude, nothing = do not exclude any files
@@ -252,8 +252,8 @@ mode = cmdArgsMode $ modes
         { cmdPath = name' "path" &= typ "FILE/DIR" &= help "The path to run Unhack on - defaults to the current working directory."
         , cmdRecursive = True &= explicit &= name "recursive" &= help "Whether to run recursively on all folders & files below the given path - defaults to TRUE"
         , cmdRoot = True &= explicit &= name "root" &= help "Whether to run from the root folder of the repository in which the given path belongs - defaults to TRUE"
-        , cmdBranch = name' "branch" &= typ "BRANCH" &= help "The branch the latest commit of which to run on - defaults to the currently checked out branch"
-        , cmdCommit = name' "commit" &= typ "HASH" &= help "The specific commit to run on - defaults to the latest commit on the checked out branch"
+        , cmdBranch = name' "branch" &= typ "BRANCH" &= help "The branch the latest commit of which to run on - defaults to no branch and the commits will resolve to HEAD"
+        , cmdCommits = name' "commits" &= typ "HASH" &= help "A list of commits to run on, or \"all\" to run on all commits - defaults to the latest commit on the given branch, or to HEAD if no branch is given"
         , cmdProject = name' "project" &= typ "PROJECT_ID" &= help "The project identification name or number to use when sending the results to a storage engint - defaults to the address of the origin"
         , cmdIncludePatterns = name' "include" &= typ "PATTERN" &= help "A list of filename patterns to include - defaults to including all files"
         , cmdExcludePatterns = name' "exclude" &= typ "PATTERN" &= help "A list of filename patterns to exclude - defaults to not exclude any files"
