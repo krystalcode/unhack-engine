@@ -94,6 +94,7 @@ runGit cmd = do
     -- Get options values.
     let directory = cmdPath cmd
     let branch = cmdBranch cmd
+    let commit = cmdCommit cmd
     let includePatterns = cmdIncludePatterns cmd
     let excludePatterns = cmdExcludePatterns cmd
     let output = cmdOutput cmd
@@ -137,23 +138,13 @@ runGit cmd = do
         )
     -}
 
-    -- Get the latest commit for the specified branch.
-    {-
-        @Issue(
-            "Implement using the currently checked out branch/commit if no
-            branch or commit are specified"
-            type="feature"
-            priority="normal"
-        )
-    -}
-    commitsText <- logCommitsText directory branch 1
-    let commits = logTextToCommits commitsText
+    -- Get the commits as required.
+    commits <- getCommits directory branch commit
 
     -- Get the tree of files for the commit, filtered by inclusion and
     -- exclusion patterns.
     trees <- mapM (commitTree' directory) commits
-    let treesInText = map (\x@(commit, tree) -> (commit, tree)) trees
-    let files = mapM (treeValidFiles' includePatterns excludePatterns validExtensions) treesInText
+    let files = map (treeValidFiles' includePatterns excludePatterns validExtensions) trees
 
     -- Get the contents of all files to be parsed.
     contents <- mapM (fileContents' directory) $ concat files
@@ -176,13 +167,36 @@ runGit cmd = do
                                   putStrLn "Storing issues to Elastic Search ..."
                                   response <- bulkIndexIssues storageConfig issues
                                   print response
-                     _ -> putStr ""
+                     _ -> putStr (unlines . map displayIssue $ issues)
 
     -- Print out all issues.
-    putStr (unlines . map displayIssue $ issues)
+    putStrLn "done !!!"
 
 runDisk :: Cmd -> IO ()
 runDisk cmd = print "Running the disk command."
+
+-- Get the Commit object(s) as a list for:
+-- - All the commits in the given branch, if "all" is given as the commit.
+-- - All the commits, if "all" is given as the commit and no branch was given.
+-- - The given commit, if the given commit is not "all".
+-- - Or, the latest commit on the given branch, if no commit was given.
+-- - Or, the HEAD, if no branch was given.
+getCommits :: FilePath -> T.Text -> T.Text -> IO ([Commit])
+getCommits directory branch "all" = do
+    commitsText <- logCommitsText directory branch 0
+    return $ logTextToCommits commitsText
+
+getCommits directory "" "" = do
+    commitsText <- hashToCommitText directory "HEAD"
+    return $ logTextToCommits commitsText
+
+getCommits directory branch "" = do
+    commitsText <- logCommitsText directory branch 1
+    return $ logTextToCommits commitsText
+
+getCommits directory _ commit = do
+    commitsText <- hashToCommitText directory commit
+    return $ logTextToCommits commitsText
 
 -- The following command line handling system has roughly been taken from HLint
 -- library.

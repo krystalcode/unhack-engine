@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Unhack.Git.Commit
-       ( logCommitsText
+       ( hashToCommitText
+       , logCommitsText
        , logTextToCommits
        ) where
 
@@ -11,6 +12,11 @@ import Unhack.Process
 
 
 -- Public API.
+
+-- Gets a commit's text in the "git_log" format for the given commit hash.
+hashToCommitText :: FilePath -> T.Text -> IO (T.Text)
+hashToCommitText directory hash = lazyProcess command directory
+    where command = T.concat ["git show -s --format=%H_%ai ", hash]
 
 -- Gets the list of commits as text by executing the "git log" command for the
 -- requested branch.
