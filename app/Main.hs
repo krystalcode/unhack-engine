@@ -7,9 +7,11 @@ import System.Console.CmdArgs.Implicit
 import System.Environment (getArgs, withArgs)
 import Unhack.Commit
 import Unhack.Git.Commit
+import Unhack.Git.Config
 import Unhack.Git.Contents
 import Unhack.Git.Tree
 import Unhack.Issue
+import qualified Unhack.Data.EmbeddedRepository as UDER
 import Unhack.Parser
 import qualified Unhack.Storage.ElasticSearch.Config as USC
 import Unhack.Storage.ElasticSearch.Operations
@@ -99,6 +101,7 @@ runGit cmd = do
     let includePatterns = cmdIncludePatterns cmd
     let excludePatterns = cmdExcludePatterns cmd
     let output = cmdOutput cmd
+    let repositoryId = cmdRepositoryId cmd
 
     -- Load the storage configuration, if required, so that we detect any
     -- problems before proceeding.
@@ -166,7 +169,12 @@ runGit cmd = do
     case (output) of "storage" -> do
                                   storageConfig <- USC.load $ cmdStorageConfigFile cmd
                                   putStrLn "Storing issues to Elastic Search ..."
-                                  response <- bulkIndexIssues storageConfig issues
+                                  repositoryUrl <- remoteUrl directory
+                                  let repository = if (null $ T.unpack repositoryId)
+                                      then error "A repository Id is required for storing the Issues on the storage engine."
+                                      else UDER.emptyEmbeddedRepository { UDER._id = repositoryId, UDER.url = repositoryUrl }
+                                  let projectIssues = bulkSetRepository issues repository
+                                  response <- bulkIndexIssues storageConfig projectIssues
                                   print response
                      _ -> putStr (unlines . map displayIssue $ issues)
 
@@ -285,6 +293,7 @@ data Cmd
         , cmdExcludePatterns :: [T.Text]   -- ^ the filename patterns to exclude, nothing = do not exclude any files
         , cmdConfigFile :: FilePath        -- ^ the path to the Unhack configuration file to use, nothing = unhack.y(a)ml in the Git root folder
         , cmdOutput :: T.Text              -- ^ where should the result get printed e.g. screen, file, storage, nothing = screen
+        , cmdRepositoryId :: T.Text        -- ^ the ID or name of the repository as it will be displayed or stored, nothing = the url of the "origin" remote
         , cmdStorageType :: T.Text         -- ^ the type of storage to send the results to
         , cmdStorageHost :: T.Text         -- ^ the host of the storage engine
         , cmdStoragePort :: Int            -- ^ the port that the storage engine listens to
@@ -315,6 +324,7 @@ mode = cmdArgsMode $ modes
         , cmdExcludePatterns = name' "exclude" &= typ "PATTERN" &= help "A list of filename patterns to exclude - defaults to not exclude any files"
         , cmdConfigFile = name' "config-file" &= typFile &= help "The path to the Unhack configuration to use - defaults unhack.y(a)ml in the root folder of the repository"
         , cmdOutput = name'' "output" "screen" &= typ "OUTPUT" &= help "Where to output the results (screen, file, storage)"
+        , cmdRepositoryId = name' "repository-id" &= typ "REPOSITORY_ID" &= help "The ID or name of the repository for display/storage purposes - defaults to the url of the \"origin\" remote"
         , cmdStorageType = name' "storage-type" &= typ "TYPE" &= help "The type of the storage engine used. Supported types are 'elasticsearch'."
         , cmdStorageHost = name' "storage-host" &= typ "HOST" &= help "The host of the storage engine."
         , cmdStoragePort = name' "storage-port" &= typ "PORT" &= help "The port that the storage engine is listening to."

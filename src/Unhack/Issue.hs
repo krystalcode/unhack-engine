@@ -3,15 +3,17 @@
 module Unhack.Issue
        ( accessProperty
        , bulkSetProperty
+       , bulkSetRepository
        , bulkSetCommit
        , displayIssue
        , emptyIssue
        , Issue(..)
        ) where
 
-import Unhack.Commit
 import Data.List
 import Data.Aeson
+import Unhack.Commit
+import Unhack.Data.EmbeddedRepository
 
 {-
   @Issue(
@@ -59,9 +61,13 @@ bulkSetProperty issues propertyKey propertyValue
 bulkSetCommit :: [Issue] -> Commit -> [Issue]
 bulkSetCommit issues commit = map (setCommit commit) issues
 
+bulkSetRepository :: [Issue] -> EmbeddedRepository -> [Issue]
+bulkSetRepository issues repository = map (setRepository repository) issues
+
 -- Functions for internal use.
 
-data Issue = Issue { commit :: Commit
+data Issue = Issue { repository :: EmbeddedRepository
+                   , commit :: Commit
                    {-
                      @Issue(
                        "Support path hierarchy in file property",
@@ -83,16 +89,18 @@ data Issue = Issue { commit :: Commit
                    , labels :: String
                    } deriving (Show)
 
-emptyIssue = Issue { commit   = emptyCommit
-                   , file     = ""
-                   , title    = ""
-                   , kind     = ""
-                   , priority = ""
-                   , labels   = "" }
+emptyIssue = Issue { repository = emptyEmbeddedRepository
+                   , commit     = emptyCommit
+                   , file       = ""
+                   , title      = ""
+                   , kind       = ""
+                   , priority   = ""
+                   , labels     = "" }
 
 instance ToJSON Issue where
-    toJSON (Issue commit file title kind priority labels) =
-        object [ "commit" .= commit
+    toJSON (Issue repository commit file title kind priority labels) =
+        object [ "repository" .= repository
+               , "commit" .= commit
                , "file" .= file
                , "title" .= title
                , "type" .= kind
@@ -102,6 +110,9 @@ instance ToJSON Issue where
 displayProperty :: Issue -> String -> String
 displayProperty issue property = if text == "" then "" else property ++ ": " ++ text
                                  where text = accessProperty issue property
+
+setRepository :: EmbeddedRepository -> Issue -> Issue
+setRepository repositoryValue issue = issue { repository = repositoryValue }
 
 setFile :: String -> Issue -> Issue
 setFile fileValue issue = issue { file = fileValue }
