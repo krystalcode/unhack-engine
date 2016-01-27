@@ -41,6 +41,7 @@ main = do
     case cmd of
         CmdGit{} -> runGit cmd
         CmdDisk{} -> runDisk cmd
+        CmdElasticSearch{} -> runElasticSearch cmd
 
 {-
     @Issue(
@@ -175,6 +176,57 @@ runGit cmd = do
 runDisk :: Cmd -> IO ()
 runDisk cmd = print "Running the disk command."
 
+runElasticSearch :: Cmd -> IO ()
+runElasticSearch cmd = do
+    -- Get options values.
+    let action = cmdAction cmd
+    let storageConfigFile = cmdStorageConfigFile cmd
+
+    -- Get the storage engine configuration.
+    storageConfig <- USC.load storageConfigFile
+
+    case action of "create_index" -> do
+                                     putStrLn "Creating the Elastic Search index ..."
+                                     indexResponse <- createIndex' storageConfig
+                                     print indexResponse
+                   "delete_index" -> do
+                                     putStrLn "Deleting the Elastic Search index ..."
+                                     indexResponse <- deleteIndex' storageConfig
+                                     print indexResponse
+                   "put_mapping"    -> do
+                                     putStrLn "Creating the mapping for the Elastic Search index ..."
+                                     mappingResponse <- putMapping' storageConfig
+                                     print mappingResponse
+                   "delete_mapping" -> do
+                                     putStrLn "Deleting the mapping for the Elastic Search index ..."
+                                     mappingResponse <- deleteMapping' storageConfig
+                                     print mappingResponse
+                   "create_index_with_mapping" -> do
+                                     putStrLn "Creating the Elastic Search index ..."
+                                     indexResponse <- createIndex' storageConfig
+                                     print indexResponse
+                                     putStrLn "Creating the mapping for the Elastic Search index ..."
+                                     mappingResponse <- putMapping' storageConfig
+                                     print mappingResponse
+                   "recreate_index" -> do
+                                     putStrLn "Deleting the Elastic Search index ..."
+                                     dIndexResponse <- deleteIndex' storageConfig
+                                     print dIndexResponse
+                                     putStrLn "Creating the Elastic Search index ..."
+                                     cIndexResponse <- createIndex' storageConfig
+                                     print cIndexResponse
+                   "recreate_index_with_mapping" -> do
+                                     putStrLn "Deleting the Elastic Search index ..."
+                                     dIndexResponse <- deleteIndex' storageConfig
+                                     print dIndexResponse
+                                     putStrLn "Creating the Elastic Search index ..."
+                                     cIndexResponse <- createIndex' storageConfig
+                                     print cIndexResponse
+                                     putStrLn "Creating the mapping for the Elastic Search index ..."
+                                     mappingResponse <- putMapping' storageConfig
+                                     print mappingResponse
+                   "" -> error "You must specify an action to perform."
+
 -- Get the Commit object(s) as a list for:
 -- - All the commits in the given branch, if "all" is given as the commit.
 -- - All the commits, if "all" is given as the commit and no branch was given.
@@ -245,6 +297,10 @@ data Cmd
         , cmdIncludePatterns :: [T.Text]   -- ^ the filename patterns to include, nothing = run on all files
         , cmdExcludePatterns :: [T.Text]   -- ^ the filename patterns to exclude, nothing = do not exclude any files
         }
+    | CmdElasticSearch
+        { cmdAction :: T.Text              -- ^ the action to execute
+        , cmdStorageConfigFile :: FilePath -- ^ the path to the storage configuration file, nothing = /etc/unhack/storage.yaml
+        }
     deriving (Data, Typeable, Show)
 
 mode = cmdArgsMode $ modes
@@ -271,6 +327,10 @@ mode = cmdArgsMode $ modes
         , cmdIncludePatterns = name' "config-include" &= typ "PATTERN" &= help "A list of filename patterns to include - defaults to including all files"
         , cmdExcludePatterns = name' "config-exclude" &= typ "PATTERN" &= help "A list of filename patterns to exclude - defaults to not exclude any files"
         } &= explicit &= name "disk"
+    , CmdElasticSearch
+        { cmdAction = name' "action" &=typ "ACTION" &= help "The action to perform. Available actions are \"create_index\", \"delete_index\", \"put_mapping\", \"delete_mapping\", \"create_index_with_mapping\", \"recreate_index\", \"recreate_index_with_mapping\"."
+        , cmdStorageConfigFile = name'' "storage-config-file" "/etc/unhack/storage.yaml" &= typFile &= help "The path to the file with the storage configuration - defaults to /etc/unhack/storage.yaml"
+        } &= explicit &= name "elasticsearch"
     ] &= program "unhack" &= verbosity
     &=  summary ("Unhack v0.1.0.0, (C) Dimitris Bozelos 2015-2016")
     where
