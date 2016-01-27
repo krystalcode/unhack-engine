@@ -17,18 +17,28 @@ library
   hs-source-dirs:      src
   exposed-modules:     Unhack.Commit
                      , Unhack.Git.Commit
+                     , Unhack.Git.Config
                      , Unhack.Git.Contents
-                     , Unhack.Git.Tree
                      , Unhack.Git.Fetch
+                     , Unhack.Git.Tree
                      , Unhack.Issue
                      , Unhack.Parser
                      , Unhack.Process
+                     , Unhack.Data.Repository
+                     , Unhack.Data.EmbeddedRepository
+                     , Unhack.Storage.ElasticSearch.Config
+                     , Unhack.Storage.ElasticSearch.Operations
   build-depends:       aeson >= 0.10.0.0 && < 1
                      , base >= 4.7 && < 5
+                     , bloodhound >= 0.10.0.0 && < 1
+                     , bytestring >= 0.10.6.0 && < 1
                      , cmdargs >= 0.10 && < 1
+                     , http-client >= 0.4.26.2 && < 1
                      , process >= 1.2.3.0 && < 2
                      , regex-pcre >= 0.94.4 && < 1
                      , text >= 1.2.2.0 && < 2
+                     , vector >= 0.11.0.0 && < 1
+                     , yaml >= 0.8.15.1 && < 1
   default-language:    Haskell2010
 
 executable unhack-core-exe
