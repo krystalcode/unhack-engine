@@ -1,11 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Unhack.Storage.ElasticSearch.Operations
-       ( createIndex'
+       ( createIndexes
+       , createIndex'
+       , deleteIndexes
        , deleteIndex'
+       , putMappings
        , putMapping'
+       , deleteMappings
        , deleteMapping'
-       , indexIssue
+       , indexDocument'
        , bulkIndexIssues
        ) where
 
@@ -29,26 +33,54 @@ import qualified Unhack.Storage.ElasticSearch.Config as USC
 
 -- Public API.
 
-createIndex' :: USC.StorageConfig -> IO (Reply)
-createIndex' config = withBH' config $ createIndex (indexSettings config) (indexName config)
+createIndexes :: USC.StorageConfig -> IO ([Reply])
+createIndexes config = mapM (createIndex' config) $ USC.indexes config
 
-deleteIndex' :: USC.StorageConfig -> IO (Reply)
-deleteIndex' config = withBH' config $ deleteIndex (indexName config)
+createIndex' :: USC.StorageConfig -> USC.StorageIndexSettings -> IO (Reply)
+createIndex' config settings = withBH' config $ createIndex (indexSettings settings) (indexName settings)
 
-putMapping' :: USC.StorageConfig -> IO (Reply)
-putMapping' config = withBH' config $ putMapping (indexName config) issueMapping IssueMapping
+deleteIndexes :: USC.StorageConfig -> IO ([Reply])
+deleteIndexes config = mapM (deleteIndex' config) $ USC.indexes config
 
-deleteMapping' :: USC.StorageConfig -> IO (Reply)
-deleteMapping' config = withBH' config $ deleteMapping (indexName config) issueMapping
+deleteIndex' :: USC.StorageConfig -> USC.StorageIndexSettings -> IO (Reply)
+deleteIndex' config settings = withBH' config $ deleteIndex (indexName settings)
 
-indexIssue :: (ToJSON doc) => USC.StorageConfig -> doc -> IO (Reply)
-indexIssue config issue = withBH' config $ indexDocumentAutoID index issueMapping defaultIndexDocumentSettings issue
-    where index = indexName config
+putMappings :: USC.StorageConfig -> IO ([Reply])
+putMappings config = mapM (putMapping' config) $ USC.indexes config
 
-bulkIndexIssues :: USC.StorageConfig -> [Issue] -> IO (Reply)
-bulkIndexIssues config issues = withBH' config $ bulk (fromList ops)
+putMapping' :: USC.StorageConfig -> USC.StorageIndexSettings -> IO (Reply)
+putMapping' config settings@(USC.StorageIndexSettings key _ _ _)
+    | key == "repository" = withBH'' $ putMapping (indexName settings) repositoryMapping RepositoryMapping
+    | key == "branch"     = withBH'' $ putMapping (indexName settings) branchMapping BranchMapping
+    | key == "commit"     = withBH'' $ putMapping (indexName settings) commitMapping CommitMapping
+    | key == "issue"      = withBH'' $ putMapping (indexName settings) issueMapping IssueMapping
+    where withBH'' = withBH' config
+
+deleteMappings :: USC.StorageConfig -> IO ([Reply])
+deleteMappings config = mapM (deleteMapping' config) $ USC.indexes config
+
+deleteMapping' :: USC.StorageConfig -> USC.StorageIndexSettings -> IO (Reply)
+deleteMapping' config settings@(USC.StorageIndexSettings key _ _ _)
+    | key == "repository" = withBH'' $ deleteMapping'' repositoryMapping
+    | key == "branch"     = withBH'' $ deleteMapping'' branchMapping
+    | key == "commit"     = withBH'' $ deleteMapping'' commitMapping
+    | key == "issue"      = withBH'' $ deleteMapping'' issueMapping
+    where withBH''        = withBH' config
+          deleteMapping'' = deleteMapping (indexName settings)
+
+indexDocument' :: (ToJSON doc) => USC.StorageConfig -> USC.StorageIndexSettings -> doc -> IO (Reply)
+indexDocument' config settings@(USC.StorageIndexSettings key _ _ _) document
+    | key == "repository" = withBH'' $ indexDocument'' repositoryMapping defaultIndexDocumentSettings document
+    | key == "branch"     = withBH'' $ indexDocument'' branchMapping defaultIndexDocumentSettings document
+    | key == "commit"     = withBH'' $ indexDocument'' commitMapping defaultIndexDocumentSettings document
+    | key == "issue"      = withBH'' $ indexDocument'' issueMapping defaultIndexDocumentSettings document
+    where withBH''        = withBH' config
+          indexDocument'' = indexDocumentAutoID (indexName settings)
+
+bulkIndexIssues :: USC.StorageConfig -> USC.StorageIndexSettings -> [Issue] -> IO (Reply)
+bulkIndexIssues config settings issues = withBH' config $ bulk (fromList ops)
     where ops = [BulkIndex index issueMapping (DocId "") (toJSON issue) | issue <- issues]
-          index = indexName config
+          index = indexName settings
 
 
 -- Functions/types for internal use.
@@ -61,13 +93,92 @@ server config = Server $ T.concat [host, ":", T.pack(show port)]
     where host = USC.host config
           port = USC.port config
 
-indexName :: USC.StorageConfig -> IndexName
-indexName config = IndexName $ USC.name (USC.index config)
+indexName :: USC.StorageIndexSettings -> IndexName
+indexName settings = IndexName $ USC.name settings
 
-indexSettings :: USC.StorageConfig -> IndexSettings
-indexSettings config = IndexSettings (ShardCount shardCount) (ReplicaCount replicaCount)
-    where shardCount = USC.shards (USC.index config)
-          replicaCount = USC.replicas (USC.index config)
+indexSettings :: USC.StorageIndexSettings -> IndexSettings
+indexSettings settings = IndexSettings (ShardCount shardCount) (ReplicaCount replicaCount)
+    where shardCount = USC.shards settings
+          replicaCount = USC.replicas settings
+
+-- Mapping for the "repository" document type.
+repositoryMapping = MappingName "repository"
+
+data RepositoryMapping = RepositoryMapping deriving (Eq, Show)
+
+instance ToJSON RepositoryMapping where
+    toJSON RepositoryMapping
+        = object [ "repository"
+            .= object [ "properties"
+                .= object [ "name"          .= object [ "type"  .= ("string"       :: T.Text)
+                                                      , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "type"          .= object [ "type"  .= ("string"       :: T.Text)
+                                                      , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "url"           .= object [ "type"  .= ("string"       :: T.Text)
+                                                      , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "previousUrls"  .= object [ "type"  .= ("string"       :: T.Text)
+                                                      , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "defaultBranch" .= object [ "type"  .= ("nested"       :: T.Text)
+                                                      , "properties"
+                                                         .= object [ "_id"         .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                             , "index"  .= ("not_analyzed" :: T.Text) ]
+                                                                   , "name"        .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                             , "index"  .= ("not_analyzed" :: T.Text) ]]]
+                          , "headCommit"   .= object [ "type"  .= ("nested"       :: T.Text)
+                                                     , "properties"
+                                                        .= object [ "_id"         .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                            , "index"  .= ("not_analyzed" :: T.Text) ]
+                                                                  , "hash"        .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                            , "index"  .= ("not_analyzed" :: T.Text) ]
+                                                                  , "time"        .= object [ "type"   .= ("date"         :: T.Text)
+                                                                                            , "format" .= ("epoch_second" :: T.Text) ]
+                                                                  , "buildStatus" .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                            , "index"  .= ("not_analyzed" :: T.Text) ]]] ]]]
+
+
+-- Mapping for the "branch" document type.
+branchMapping = MappingName "branch"
+
+data BranchMapping = BranchMapping deriving (Eq, Show)
+
+instance ToJSON BranchMapping where
+    toJSON BranchMapping
+        = object [ "branch"
+            .= object [ "properties"
+                .= object [ "name"       .= object [ "type"  .= ("string"       :: T.Text)
+                                                   , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "headCommit" .= object [ "type"  .= ("nested"       :: T.Text)
+                                                   , "properties"
+                                                       .= object [ "_id"         .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                           , "index"  .= ("not_analyzed" :: T.Text) ]
+                                                                 , "hash"        .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                           , "index"  .= ("not_analyzed" :: T.Text) ]
+                                                                 , "time"        .= object [ "type"   .= ("date"         :: T.Text)
+                                                                                           , "format" .= ("epoch_second" :: T.Text) ]
+                                                                 , "buildStatus" .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                           , "index"  .= ("not_analyzed" :: T.Text) ]]] ]]]
+
+
+-- Mapping for the "commit" document type.
+commitMapping = MappingName "commit"
+
+data CommitMapping = CommitMapping deriving (Eq, Show)
+
+instance ToJSON CommitMapping where
+    toJSON CommitMapping
+        = object [ "commit"
+            .= object [ "properties"
+                .= object [ "repositoryId" .= object [ "type"   .= ("string"       :: T.Text)
+                                                     , "index"  .= ("not_analyzed" :: T.Text) ]
+                          , "hash"         .= object [ "type"   .= ("string"       :: T.Text)
+                                                     , "index"  .= ("not_analyzed" :: T.Text) ]
+                          , "time"         .= object [ "type"   .= ("date"         :: T.Text)
+                                                     , "format" .= ("epoch_second" :: T.Text) ]
+                          , "buildStatus"  .= object [ "type"   .= ("string"       :: T.Text)
+                                                     , "index"  .= ("not_analyzed" :: T.Text) ]
+                          , "buildMessage" .= object [ "type"   .= ("string"       :: T.Text)
+                                                     , "index"  .= ("not_analyzed" :: T.Text) ] ]]]
+
 
 -- Mapping for the "issue" document type.
 {-
@@ -86,32 +197,25 @@ instance ToJSON IssueMapping where
     toJSON IssueMapping
         = object [ "issue"
             .= object [ "properties"
-                .= object [ "repository"
-                              .= object [ "type" .= ("nested" :: T.Text)
-                                        , "properties"
-                                            .= object [ "id" .= object [ "type" .= ("string" :: T.Text)
-                                                                       , "index" .= ("not_analyzed" :: T.Text) ],
-                                                        "url" .= object [ "type" .= ("string" :: T.Text)
-                                                                        , "index" .= ("not_analyzed" :: T.Text) ]]]
-                          , "commit"
-                              .= object [ "type" .= ("nested" :: T.Text)
-                                        , "properties"
-                                            .= object [ "hash" .= object [ "type" .= ("string" :: T.Text)
-                                                                         , "index" .= ("not_analyzed" :: T.Text) ],
-                                                        "time" .= object [ "type" .= ("date" :: T.Text)
-                                                                         , "format" .= ("epoch_second" :: T.Text) ]]]
-                          , "file"
-                              .= object [ "type" .= ("string" :: T.Text)
-                                        , "index" .= ("not_analyzed" :: T.Text) ]
-                          , "title"
-                              .= object [ "type" .= ("string" :: T.Text)
-                                        , "index" .= ("analyzed" :: T.Text) ]
-                          , "type"
-                              .= object [ "type" .= ("string" :: T.Text)
-                                        , "index" .= ("not_analyzed" :: T.Text) ]
-                          , "priority"
-                              .= object [ "type" .= ("string" :: T.Text)
-                                        , "index" .= ("not_analyzed" :: T.Text) ]
-                          , "labels"
-                              .= object [ "type" .= ("string" :: T.Text)
-                                        , "index" .= ("not_analyzed" :: T.Text) ] ]]]
+                .= object [ "repository" .= object [ "type" .= ("nested" :: T.Text)
+                                                   , "properties"
+                                                       .= object [ "id"  .= object [ "type"  .= ("string"       :: T.Text)
+                                                                                   , "index" .= ("not_analyzed" :: T.Text) ]
+                                                                 , "url" .= object [ "type"  .= ("string"       :: T.Text)
+                                                                                   , "index" .= ("not_analyzed" :: T.Text) ]]]
+                          , "commit"     .= object [ "type" .= ("nested" :: T.Text)
+                                                   , "properties"
+                                                       .= object [ "hash" .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                    , "index"  .= ("not_analyzed" :: T.Text) ]
+                                                                 , "time" .= object [ "type"   .= ("date"         :: T.Text)
+                                                                                    , "format" .= ("epoch_second" :: T.Text) ]]]
+                          , "file"       .= object [ "type"  .= ("string"       :: T.Text)
+                                                   , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "title"      .= object [ "type"  .= ("string"       :: T.Text)
+                                                   , "index" .= ("analyzed"     :: T.Text) ]
+                          , "type"       .= object [ "type"  .= ("string"       :: T.Text)
+                                                   , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "priority"   .= object [ "type"  .= ("string"       :: T.Text)
+                                                   , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "labels"     .= object [ "type"  .= ("string"       :: T.Text)
+                                                   , "index" .= ("not_analyzed" :: T.Text) ] ]]]
