@@ -174,7 +174,7 @@ runGit cmd = do
                                       then error "A repository Id is required for storing the Issues on the storage engine."
                                       else UDER.emptyEmbeddedRepository { UDER._id = repositoryId, UDER.url = repositoryUrl }
                                   let projectIssues = bulkSetRepository issues repository
-                                  response <- bulkIndexIssues storageConfig projectIssues
+                                  response <- bulkIndexIssues storageConfig (USC.indexSettingsFromConfig "issue" storageConfig) projectIssues
                                   print response
                      _ -> putStr (unlines . map displayIssue $ issues)
 
@@ -193,45 +193,45 @@ runElasticSearch cmd = do
     -- Get the storage engine configuration.
     storageConfig <- USC.load storageConfigFile
 
-    case action of "create_index" -> do
+    case action of "create_indexes" -> do
                                      putStrLn "Creating the Elastic Search index ..."
-                                     indexResponse <- createIndex' storageConfig
+                                     indexResponse <- createIndexes storageConfig
                                      print indexResponse
-                   "delete_index" -> do
+                   "delete_indexes" -> do
                                      putStrLn "Deleting the Elastic Search index ..."
-                                     indexResponse <- deleteIndex' storageConfig
+                                     indexResponse <- deleteIndexes storageConfig
                                      print indexResponse
-                   "put_mapping"    -> do
+                   "put_mappings"    -> do
                                      putStrLn "Creating the mapping for the Elastic Search index ..."
-                                     mappingResponse <- putMapping' storageConfig
+                                     mappingResponse <- putMappings storageConfig
                                      print mappingResponse
-                   "delete_mapping" -> do
+                   "delete_mappings" -> do
                                      putStrLn "Deleting the mapping for the Elastic Search index ..."
-                                     mappingResponse <- deleteMapping' storageConfig
+                                     mappingResponse <- deleteMappings storageConfig
                                      print mappingResponse
-                   "create_index_with_mapping" -> do
+                   "create_indexes_with_mappings" -> do
                                      putStrLn "Creating the Elastic Search index ..."
-                                     indexResponse <- createIndex' storageConfig
+                                     indexResponse <- createIndexes storageConfig
                                      print indexResponse
                                      putStrLn "Creating the mapping for the Elastic Search index ..."
-                                     mappingResponse <- putMapping' storageConfig
+                                     mappingResponse <- putMappings storageConfig
                                      print mappingResponse
-                   "recreate_index" -> do
+                   "recreate_indexes" -> do
                                      putStrLn "Deleting the Elastic Search index ..."
-                                     dIndexResponse <- deleteIndex' storageConfig
+                                     dIndexResponse <- deleteIndexes storageConfig
                                      print dIndexResponse
                                      putStrLn "Creating the Elastic Search index ..."
-                                     cIndexResponse <- createIndex' storageConfig
+                                     cIndexResponse <- createIndexes storageConfig
                                      print cIndexResponse
-                   "recreate_index_with_mapping" -> do
+                   "recreate_indexes_with_mappings" -> do
                                      putStrLn "Deleting the Elastic Search index ..."
-                                     dIndexResponse <- deleteIndex' storageConfig
+                                     dIndexResponse <- deleteIndexes storageConfig
                                      print dIndexResponse
                                      putStrLn "Creating the Elastic Search index ..."
-                                     cIndexResponse <- createIndex' storageConfig
+                                     cIndexResponse <- createIndexes storageConfig
                                      print cIndexResponse
                                      putStrLn "Creating the mapping for the Elastic Search index ..."
-                                     mappingResponse <- putMapping' storageConfig
+                                     mappingResponse <- putMappings storageConfig
                                      print mappingResponse
                    "" -> error "You must specify an action to perform."
 
