@@ -2,6 +2,7 @@
 
 module Unhack.Storage.ElasticSearch.Config
        ( load
+       , indexSettingsFromConfig
        , StorageConfig(..)
        , StorageIndexSettings(..)
        ) where
@@ -24,12 +25,18 @@ import GHC.Generics (Generic)
 
 -- Public API.
 
+-- Load storage configuration from a file.
 load :: FilePath -> IO (StorageConfig)
 load filepath = do
     ymlData <- BS.readFile filepath
     let config = Y.decode ymlData :: Maybe StorageConfig
     return $ fromJust config
 
+-- Get the settings for a specific index from the storage configuration.
+indexSettingsFromConfig :: T.Text -> StorageConfig -> StorageIndexSettings
+indexSettingsFromConfig indexKey config = matchAsList !! 0
+    where allIndexes  = indexes config
+          matchAsList = filter (\x@(StorageIndexSettings key _ _ _) -> key /= indexKey) allIndexes
 
 {-
   @Issue(
@@ -43,11 +50,12 @@ data StorageConfig = StorageConfig
     { type' :: T.Text
     , host :: T.Text
     , port :: Int
-    , index :: StorageIndexSettings
+    , indexes :: [StorageIndexSettings]
     } deriving (Generic, Show)
 
 data StorageIndexSettings = StorageIndexSettings
-    { name :: T.Text
+    { key :: T.Text
+    , name :: T.Text
     , shards :: Int
     , replicas :: Int
     } deriving (Generic, Show)
@@ -59,25 +67,26 @@ instance FromJSON StorageConfig where
                            v .: "type" <*>
                            v .: "host" <*>
                            v .: "port" <*>
-                           v .: "index"
+                           v .: "indexes"
     parseJSON invalid    = typeMismatch "StorageConfig" invalid
 
 instance ToJSON StorageConfig where
-    toJSON (StorageConfig type' host port index) =
+    toJSON (StorageConfig type' host port indexes) =
         object [ "type" .= type'
                , "host" .= host
                , "port" .= port
-               , "index" .= index ]
+               , "indexes" .= indexes ]
 
 instance FromJSON StorageIndexSettings where
     parseJSON (Object v) = StorageIndexSettings <$>
+                           v .: "key" <*>
                            v .: "name" <*>
                            v .: "shards" <*>
                            v .: "replicas"
     parseJSON invalid    = typeMismatch "StorageIndexSettings" invalid
 
 instance ToJSON StorageIndexSettings where
-    toJSON (StorageIndexSettings name  shards replicas) =
+    toJSON (StorageIndexSettings key name shards replicas) =
         object [ "name" .= name
                , "shards" .= shards
                , "replicas" .= replicas ]
