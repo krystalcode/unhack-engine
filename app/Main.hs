@@ -2,7 +2,9 @@
 
 module Main where
 
+import qualified Data.ByteString.Char8 as BS (split, unpack)
 import qualified Data.Text as T (unpack, Text)
+import qualified Database.Redis as R
 import System.Console.CmdArgs.Implicit
 import System.Environment (getArgs, withArgs)
 import Unhack.Commit
@@ -11,6 +13,8 @@ import Unhack.Git.Config
 import Unhack.Git.Contents
 import Unhack.Git.Tree
 import Unhack.Issue
+import qualified Unhack.Pubsub.Dispatcher as UPD
+import qualified Unhack.Pubsub.Repository as UPR
 import qualified Unhack.Data.EmbeddedRepository as UDER
 import Unhack.Parser
 import qualified Unhack.Storage.ElasticSearch.Config as USC
@@ -44,6 +48,7 @@ main = do
         CmdGit{} -> runGit cmd
         CmdDisk{} -> runDisk cmd
         CmdElasticSearch{} -> runElasticSearch cmd
+        CmdPubSub{} -> runPubSub cmd
 
 {-
     @Issue(
@@ -91,6 +96,26 @@ main = do
         labels="modularity"
     )
 -}
+
+runPubSub :: Cmd -> IO ()
+runPubSub cmd = do
+    storageConfig <- USC.load $ cmdStorageConfigFile cmd
+
+    conn <- R.connect $ R.defaultConnectInfo { R.connectHost = "redis" }
+
+    R.runRedis conn $ R.pubSub (R.subscribe ["uh_engine"]) $ \msg -> do
+      let channel = BS.unpack $ R.msgChannel msg
+      let message = R.msgMessage msg
+
+      print $ "Received message on channel '" ++ channel ++ "'"
+
+      case (channel) of
+          "uh_engine" -> do
+              UPD.dispatch storageConfig (USC.indexSettingsFromConfig "repository" storageConfig) message
+
+          _ -> putStrLn $ "The PubSub channel '" ++ channel ++ "' is not recognised."
+
+      return mempty
 
 runGit :: Cmd -> IO ()
 runGit cmd = do
@@ -310,6 +335,10 @@ data Cmd
         { cmdAction :: T.Text              -- ^ the action to execute
         , cmdStorageConfigFile :: FilePath -- ^ the path to the storage configuration file, nothing = /etc/unhack/storage.yaml
         }
+    | CmdPubSub
+        { cmdPubSubConfigFile  :: FilePath -- ^ the path to the pubsub configuration file, nothing = /etc/unhack/pubsub.yaml
+        , cmdStorageConfigFile :: FilePath -- ^ the path to the storage configuration file, nothing = /etc/unhack/storage.yaml
+        }
     deriving (Data, Typeable, Show)
 
 mode = cmdArgsMode $ modes
@@ -341,6 +370,10 @@ mode = cmdArgsMode $ modes
         { cmdAction = name' "action" &=typ "ACTION" &= help "The action to perform. Available actions are \"create_index\", \"delete_index\", \"put_mapping\", \"delete_mapping\", \"create_index_with_mapping\", \"recreate_index\", \"recreate_index_with_mapping\"."
         , cmdStorageConfigFile = name'' "storage-config-file" "/etc/unhack/storage.yaml" &= typFile &= help "The path to the file with the storage configuration - defaults to /etc/unhack/storage.yaml"
         } &= explicit &= name "elasticsearch"
+    , CmdPubSub
+        { cmdPubSubConfigFile = name'' "pubsub-config-file" "/etc/unhack/pubsub.yaml" &= typFile &= help "The path to the file with the pubsub configuration - defaults to /etc/unhack/pubsub.yaml"
+        , cmdStorageConfigFile = name'' "storage-config-file" "/etc/unhack/storage.yaml" &= typFile &= help "The path to the file with the storage configuration - defaults to /etc/unhack/storage.yaml"
+        } &= explicit &= name "pubsub"
     ] &= program "unhack" &= verbosity
     &=  summary ("Unhack v0.1.0.0, (C) Dimitris Bozelos 2015-2016")
     where

@@ -9,6 +9,7 @@ module Unhack.Storage.ElasticSearch.Operations
        , putMapping'
        , deleteMappings
        , deleteMapping'
+       , getDocument'
        , indexDocument'
        , bulkIndexIssues
        ) where
@@ -67,6 +68,15 @@ deleteMapping' config settings@(USC.StorageIndexSettings key _ _ _)
     | key == "issue"      = withBH'' $ deleteMapping'' issueMapping
     where withBH''        = withBH' config
           deleteMapping'' = deleteMapping (indexName settings)
+
+getDocument' :: USC.StorageConfig -> USC.StorageIndexSettings -> DocId -> IO (Reply)
+getDocument' config settings@(USC.StorageIndexSettings key _ _ _) docId
+    | key == "repository" = withBH'' $ getDocument'' repositoryMapping docId
+    | key == "branch"     = withBH'' $ getDocument'' branchMapping docId
+    | key == "commit"     = withBH'' $ getDocument'' commitMapping docId
+    | key == "issue"      = withBH'' $ getDocument'' issueMapping docId
+    where withBH''        = withBH' config
+          getDocument'' = getDocument (indexName settings)
 
 indexDocument' :: (ToJSON doc) => USC.StorageConfig -> USC.StorageIndexSettings -> doc -> IO (Reply)
 indexDocument' config settings@(USC.StorageIndexSettings key _ _ _) document
