@@ -1,16 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Unhack.Storage.ElasticSearch.Operations
-       ( createIndexes
+       ( createAllIndexes
+       , createIndexes
        , createIndex'
+       , deleteAllIndexes
        , deleteIndexes
        , deleteIndex'
+       , filterIndexSettings
+       , putAllMappings
        , putMappings
        , putMapping'
+       , deleteAllMappings
        , deleteMappings
        , deleteMapping'
        , getDocument'
        , indexDocument'
+       , updateDocument'
+       , bulkIndexDocuments'
        , bulkIndexIssues
        ) where
 
@@ -34,20 +41,33 @@ import qualified Unhack.Storage.ElasticSearch.Config as USC
 
 -- Public API.
 
-createIndexes :: USC.StorageConfig -> IO ([Reply])
-createIndexes config = mapM (createIndex' config) $ USC.indexes config
+filterIndexSettings :: [USC.StorageIndexSettings] -> [T.Text] -> [USC.StorageIndexSettings]
+filterIndexSettings settings validKeys = filter (\x@(USC.StorageIndexSettings key _ _ _) -> key `elem` validKeys) settings
+
+createAllIndexes :: USC.StorageConfig -> IO ([Reply])
+createAllIndexes config = createIndexes config []
+
+createIndexes :: USC.StorageConfig -> [T.Text] -> IO ([Reply])
+createIndexes config [] = mapM (createIndex' config) $ USC.indexes config
+createIndexes config validKeys = mapM (createIndex' config) $ filterIndexSettings (USC.indexes config) validKeys
 
 createIndex' :: USC.StorageConfig -> USC.StorageIndexSettings -> IO (Reply)
 createIndex' config settings = withBH' config $ createIndex (indexSettings settings) (indexName settings)
 
-deleteIndexes :: USC.StorageConfig -> IO ([Reply])
-deleteIndexes config = mapM (deleteIndex' config) $ USC.indexes config
+deleteAllIndexes :: USC.StorageConfig -> IO ([Reply])
+deleteAllIndexes config = deleteIndexes config []
+
+deleteIndexes :: USC.StorageConfig -> [T.Text] -> IO ([Reply])
+deleteIndexes config validKeys = mapM (deleteIndex' config) $ filterIndexSettings (USC.indexes config) validKeys
 
 deleteIndex' :: USC.StorageConfig -> USC.StorageIndexSettings -> IO (Reply)
 deleteIndex' config settings = withBH' config $ deleteIndex (indexName settings)
 
-putMappings :: USC.StorageConfig -> IO ([Reply])
-putMappings config = mapM (putMapping' config) $ USC.indexes config
+putAllMappings :: USC.StorageConfig -> IO ([Reply])
+putAllMappings config = putMappings config []
+
+putMappings :: USC.StorageConfig -> [T.Text] -> IO ([Reply])
+putMappings config validKeys = mapM (putMapping' config) $ filterIndexSettings (USC.indexes config) validKeys
 
 putMapping' :: USC.StorageConfig -> USC.StorageIndexSettings -> IO (Reply)
 putMapping' config settings@(USC.StorageIndexSettings key _ _ _)
@@ -57,8 +77,11 @@ putMapping' config settings@(USC.StorageIndexSettings key _ _ _)
     | key == "issue"      = withBH'' $ putMapping (indexName settings) issueMapping IssueMapping
     where withBH'' = withBH' config
 
-deleteMappings :: USC.StorageConfig -> IO ([Reply])
-deleteMappings config = mapM (deleteMapping' config) $ USC.indexes config
+deleteAllMappings :: USC.StorageConfig -> IO ([Reply])
+deleteAllMappings config = deleteMappings config []
+
+deleteMappings :: USC.StorageConfig -> [T.Text] -> IO ([Reply])
+deleteMappings config validKeys = mapM (deleteMapping' config) $ filterIndexSettings (USC.indexes config) validKeys
 
 deleteMapping' :: USC.StorageConfig -> USC.StorageIndexSettings -> IO (Reply)
 deleteMapping' config settings@(USC.StorageIndexSettings key _ _ _)
@@ -78,6 +101,13 @@ getDocument' config settings@(USC.StorageIndexSettings key _ _ _) docId
     where withBH''        = withBH' config
           getDocument'' = getDocument (indexName settings)
 
+{-
+    @Issue(
+        "Review default index document settings"
+        type="improvement"
+        priority="low"
+    )
+-}
 indexDocument' :: (ToJSON doc) => USC.StorageConfig -> USC.StorageIndexSettings -> doc -> IO (Reply)
 indexDocument' config settings@(USC.StorageIndexSettings key _ _ _) document
     | key == "repository" = withBH'' $ indexDocument'' repositoryMapping defaultIndexDocumentSettings document
@@ -87,6 +117,39 @@ indexDocument' config settings@(USC.StorageIndexSettings key _ _ _) document
     where withBH''        = withBH' config
           indexDocument'' = indexDocumentAutoID (indexName settings)
 
+{-
+    @Issue(
+        "Provide a function that properly uses the Update API instead of
+        reindexing the full document"
+        type="improvement"
+        priority="low"
+    )
+-}
+updateDocument' :: (ToJSON doc) => USC.StorageConfig -> USC.StorageIndexSettings -> doc -> DocId -> IO (Reply)
+updateDocument' config settings@(USC.StorageIndexSettings key _ _ _) document id
+    | key == "repository" = withBH'' $ updateDocument'' repositoryMapping defaultIndexDocumentSettings document id
+    | key == "branch"     = withBH'' $ updateDocument'' branchMapping defaultIndexDocumentSettings document id
+    | key == "commit"     = withBH'' $ updateDocument'' commitMapping defaultIndexDocumentSettings document id
+    | key == "issue"      = withBH'' $ updateDocument'' issueMapping defaultIndexDocumentSettings document id
+    where withBH''        = withBH' config
+          updateDocument'' = indexDocument (indexName settings)
+
+bulkIndexDocuments' :: (ToJSON doc) => USC.StorageConfig -> USC.StorageIndexSettings -> [doc] -> IO (Reply)
+bulkIndexDocuments' config settings@(USC.StorageIndexSettings key _ _ _) docs = withBH' config $ bulk (fromList ops)
+    where ops = [BulkIndex index documentMapping (DocId "") (toJSON doc) | doc <- docs]
+          index = indexName settings
+          documentMapping = case key of "repository" -> repositoryMapping
+                                        "branch"     -> branchMapping
+                                        "commit"     -> commitMapping
+                                        "issue"      -> issueMapping
+{-
+    @Issue(
+        "Use the bulkIndexDocuments' function instead"
+        type="task"
+        priority="low"
+        labels="cleanup"
+    )
+-}
 bulkIndexIssues :: USC.StorageConfig -> USC.StorageIndexSettings -> [Issue] -> IO (Reply)
 bulkIndexIssues config settings issues = withBH' config $ bulk (fromList ops)
     where ops = [BulkIndex index issueMapping (DocId "") (toJSON issue) | issue <- issues]
