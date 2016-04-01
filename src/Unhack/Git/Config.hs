@@ -19,7 +19,7 @@ import Unhack.Process
     @Issue(
         "The Unhack.Git.Config module may not be needed anymore with the new
         flow of tasks"
-        type="improvement"
+        type="task"
         priority="low"
         labels="cleanup"
     )
