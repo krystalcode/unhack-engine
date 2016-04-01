@@ -120,30 +120,58 @@ instance ToJSON RepositoryMapping where
     toJSON RepositoryMapping
         = object [ "repository"
             .= object [ "properties"
-                .= object [ "name"          .= object [ "type"  .= ("string"       :: T.Text)
-                                                      , "index" .= ("not_analyzed" :: T.Text) ]
-                          , "type"          .= object [ "type"  .= ("string"       :: T.Text)
-                                                      , "index" .= ("not_analyzed" :: T.Text) ]
-                          , "url"           .= object [ "type"  .= ("string"       :: T.Text)
-                                                      , "index" .= ("not_analyzed" :: T.Text) ]
-                          , "previousUrls"  .= object [ "type"  .= ("string"       :: T.Text)
-                                                      , "index" .= ("not_analyzed" :: T.Text) ]
-                          , "defaultBranch" .= object [ "type"  .= ("nested"       :: T.Text)
-                                                      , "properties"
-                                                         .= object [ "_id"         .= object [ "type"   .= ("string"       :: T.Text)
-                                                                                             , "index"  .= ("not_analyzed" :: T.Text) ]
-                                                                   , "name"        .= object [ "type"   .= ("string"       :: T.Text)
-                                                                                             , "index"  .= ("not_analyzed" :: T.Text) ]]]
-                          , "headCommit"   .= object [ "type"  .= ("nested"       :: T.Text)
-                                                     , "properties"
-                                                        .= object [ "_id"         .= object [ "type"   .= ("string"       :: T.Text)
-                                                                                            , "index"  .= ("not_analyzed" :: T.Text) ]
-                                                                  , "hash"        .= object [ "type"   .= ("string"       :: T.Text)
-                                                                                            , "index"  .= ("not_analyzed" :: T.Text) ]
-                                                                  , "time"        .= object [ "type"   .= ("date"         :: T.Text)
-                                                                                            , "format" .= ("epoch_second" :: T.Text) ]
-                                                                  , "buildStatus" .= object [ "type"   .= ("string"       :: T.Text)
-                                                                                            , "index"  .= ("not_analyzed" :: T.Text) ]]] ]]]
+                .= object [ "activeBranches"  .= object [ "type" .= ("nested"          :: T.Text)
+                                                        , "properties"
+                                                            .= object [ "_id"          .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                                 , "index"  .= ("not_analyzed" :: T.Text) ]
+                                                                      , "name"         .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                                 , "index"  .= ("not_analyzed" :: T.Text) ]]]
+                          , "defaultBranch"   .= object [ "type"  .= ("nested"         :: T.Text)
+                                                        , "properties"
+                                                            .= object [ "_id"          .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                                 , "index"  .= ("not_analyzed" :: T.Text) ]
+                                                                      , "name"         .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                                 , "index"  .= ("not_analyzed" :: T.Text) ]]]
+                          , "headCommit"      .= object [ "type"  .= ("nested"         :: T.Text)
+                                                        , "properties"
+                                                            .= object [ "_id"          .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                                 , "index"  .= ("not_analyzed" :: T.Text) ]
+                                                                      , "hash"         .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                                 , "index"  .= ("not_analyzed" :: T.Text) ]
+                                                                      , "time"         .= object [ "type"   .= ("date"         :: T.Text)
+                                                                                                 , "format" .= ("epoch_second" :: T.Text) ]
+                                                                      , "buildStatus"  .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                                 , "index"  .= ("not_analyzed" :: T.Text) ]
+                                                                      , "buildMessage" .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                                 , "index"  .= ("not_analyzed" :: T.Text) ]]]
+                          , "isAccessible"   .= object [ "type"  .= ("boolean"      :: T.Text)
+                                                       , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "isActive"       .= object [ "type"  .= ("boolean"      :: T.Text)
+                                                       , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "isDeleted"      .= object [ "type"  .= ("boolean"      :: T.Text)
+                                                       , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "isProcessed"    .= object [ "type"  .= ("boolean"      :: T.Text)
+                                                       , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "isPrivate"      .= object [ "type"  .= ("boolean"      :: T.Text)
+                                                       , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "name"           .= object [ "type"  .= ("string"       :: T.Text)
+                                                       , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "picture"        .= object [ "type"  .= ("string"       :: T.Text)
+                                                       , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "previousUrls"   .= object [ "type"  .= ("string"       :: T.Text)
+                                                       , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "type"           .= object [ "type"  .= ("string"       :: T.Text)
+                                                       , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "url"            .= object [ "type"  .= ("string"       :: T.Text)
+                                                       , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "vendor"         .= object [ "type"  .= ("string"       :: T.Text)
+                                                       , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "vendorId"       .= object [ "type"  .= ("string"       :: T.Text)
+                                                       , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "vendorName"     .= object [ "type"  .= ("string"       :: T.Text)
+                                                       , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "vendorUsername" .= object [ "type"  .= ("string"       :: T.Text)
+                                                       , "index" .= ("not_analyzed" :: T.Text) ] ]]]
 
 
 -- Mapping for the "branch" document type.
