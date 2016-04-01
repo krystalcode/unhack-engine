@@ -183,18 +183,24 @@ instance ToJSON BranchMapping where
     toJSON BranchMapping
         = object [ "branch"
             .= object [ "properties"
-                .= object [ "name"       .= object [ "type"  .= ("string"       :: T.Text)
-                                                   , "index" .= ("not_analyzed" :: T.Text) ]
-                          , "headCommit" .= object [ "type"  .= ("nested"       :: T.Text)
-                                                   , "properties"
-                                                       .= object [ "_id"         .= object [ "type"   .= ("string"       :: T.Text)
-                                                                                           , "index"  .= ("not_analyzed" :: T.Text) ]
-                                                                 , "hash"        .= object [ "type"   .= ("string"       :: T.Text)
-                                                                                           , "index"  .= ("not_analyzed" :: T.Text) ]
-                                                                 , "time"        .= object [ "type"   .= ("date"         :: T.Text)
-                                                                                           , "format" .= ("epoch_second" :: T.Text) ]
-                                                                 , "buildStatus" .= object [ "type"   .= ("string"       :: T.Text)
-                                                                                           , "index"  .= ("not_analyzed" :: T.Text) ]]] ]]]
+                .= object [ "headCommit"   .= object [ "type"  .= ("nested"       :: T.Text)
+                                                     , "properties"
+                                                         .= object [ "_id"          .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                              , "index"  .= ("not_analyzed" :: T.Text) ]
+                                                                   , "hash"         .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                              , "index"  .= ("not_analyzed" :: T.Text) ]
+                                                                   , "time"         .= object [ "type"   .= ("date"         :: T.Text)
+                                                                                              , "format" .= ("epoch_second" :: T.Text) ]
+                                                                   , "buildStatus"  .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                              , "index"  .= ("not_analyzed" :: T.Text) ]
+                                                                   , "buildMessage" .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                              , "index"  .= ("not_analyzed" :: T.Text) ]]]
+                          , "isActive"     .= object [ "type"  .= ("boolean"      :: T.Text)
+                                                     , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "name"         .= object [ "type"  .= ("string"       :: T.Text)
+                                                     , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "repositoryId" .= object [ "type"  .= ("string"       :: T.Text)
+                                                     , "index" .= ("not_analyzed" :: T.Text) ] ]]]
 
 
 -- Mapping for the "commit" document type.
