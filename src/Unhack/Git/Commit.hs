@@ -7,7 +7,7 @@ module Unhack.Git.Commit
        ) where
 
 import qualified Data.Text as T (concat, intercalate, lines, pack, unpack, Text)
-import Unhack.Commit
+import Unhack.Data.EmIssueCommit
 import Unhack.Process
 
 
@@ -29,7 +29,7 @@ logCommitsText directory branch nbCommits = lazyProcess command directory
 
 -- Takes text containing a list of commits, in the format returned by the
 -- "git log" command, and it converts it into a list of Commit records.
-logTextToCommits :: T.Text -> [Commit]
+logTextToCommits :: T.Text -> [EmIssueCommit]
 logTextToCommits "" = []
 logTextToCommits input = map (textToCommit' "hash_unix_timestamp") $ T.lines input
 
@@ -37,5 +37,5 @@ logTextToCommits input = map (textToCommit' "hash_unix_timestamp") $ T.lines inp
 
 -- "textToCommit" with its arguments inverted so that it can be passed on to
 -- filtering.
-textToCommit' :: T.Text -> T.Text -> Commit
-textToCommit' format commitText = textToCommit commitText format
+textToCommit' :: T.Text -> T.Text -> EmIssueCommit
+textToCommit' format commitText = textToEmIssueCommit commitText format

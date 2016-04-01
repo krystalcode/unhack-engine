@@ -10,7 +10,7 @@ import qualified Data.Text as T (unpack, Text)
 import Data.List (intercalate)
 import Text.Regex.PCRE ((=~), getAllTextMatches)
 import Unhack.Issue
-import Unhack.Commit
+import Unhack.Data.EmIssueCommit
 
 {-
   @Issue(
@@ -32,11 +32,11 @@ parseFileString file input = bulkSetProperty issues "file" (T.unpack file)
 parseFileString' :: (T.Text, T.Text) -> [Issue]
 parseFileString' (file, input) = parseFileString file input
 
-parseCommitFileString :: Commit -> T.Text -> T.Text -> [Issue]
+parseCommitFileString :: EmIssueCommit -> T.Text -> T.Text -> [Issue]
 parseCommitFileString commit file input = bulkSetCommit issues commit
     where issues = parseFileString file input
 
-parseCommitFileString' :: (Commit, T.Text, T.Text) -> [Issue]
+parseCommitFileString' :: (EmIssueCommit, T.Text, T.Text) -> [Issue]
 parseCommitFileString' (commit, file, input) = parseCommitFileString commit file input
 
 -- Functions for internal use.

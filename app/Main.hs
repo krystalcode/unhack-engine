@@ -8,6 +8,7 @@ import qualified Database.Redis as R
 import System.Console.CmdArgs.Implicit
 import System.Environment (getArgs, withArgs)
 import Unhack.Commit
+import Unhack.Data.EmIssueCommit
 import Unhack.Git.Commit
 import Unhack.Git.Config
 import Unhack.Git.Contents
@@ -260,13 +261,13 @@ runElasticSearch cmd = do
                                      print mappingResponse
                    "" -> error "You must specify an action to perform."
 
--- Get the Commit object(s) as a list for:
+-- Get the EmIssueCommit object(s) as a list for:
 -- - All the commits in the given branch, if "all" is given as the commit.
 -- - All the commits, if "all" is given as the commit and no branch was given.
 -- - The given commit, if the given commit is not "all".
 -- - Or, the latest commit on the given branch, if no commit was given.
 -- - Or, the HEAD, if no branch was given.
-getCommits :: FilePath -> T.Text -> [T.Text] -> IO ([Commit])
+getCommits :: FilePath -> T.Text -> [T.Text] -> IO ([EmIssueCommit])
 getCommits directory branch ["all"] = do
     commitsText <- logCommitsText directory branch 0
     return $ logTextToCommits commitsText

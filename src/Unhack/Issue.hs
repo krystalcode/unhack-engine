@@ -12,7 +12,7 @@ module Unhack.Issue
 
 import Data.List
 import Data.Aeson
-import Unhack.Commit
+import Unhack.Data.EmIssueCommit
 import Unhack.Data.EmbeddedRepository
 
 {-
@@ -58,7 +58,7 @@ bulkSetProperty :: [Issue] -> String -> String -> [Issue]
 bulkSetProperty issues propertyKey propertyValue
     | propertyKey == "file" = map (setFile propertyValue) issues
 
-bulkSetCommit :: [Issue] -> Commit -> [Issue]
+bulkSetCommit :: [Issue] -> EmIssueCommit -> [Issue]
 bulkSetCommit issues commit = map (setCommit commit) issues
 
 bulkSetRepository :: [Issue] -> EmbeddedRepository -> [Issue]
@@ -67,7 +67,7 @@ bulkSetRepository issues repository = map (setRepository repository) issues
 -- Functions for internal use.
 
 data Issue = Issue { repository :: EmbeddedRepository
-                   , commit :: Commit
+                   , commit :: EmIssueCommit
                    {-
                      @Issue(
                        "Support path hierarchy in file property",
@@ -90,7 +90,7 @@ data Issue = Issue { repository :: EmbeddedRepository
                    } deriving (Show)
 
 emptyIssue = Issue { repository = emptyEmbeddedRepository
-                   , commit     = emptyCommit
+                   , commit     = emptyEmIssueCommit
                    , file       = ""
                    , title      = ""
                    , kind       = ""
@@ -117,5 +117,5 @@ setRepository repositoryValue issue = issue { repository = repositoryValue }
 setFile :: String -> Issue -> Issue
 setFile fileValue issue = issue { file = fileValue }
 
-setCommit :: Commit -> Issue -> Issue
+setCommit :: EmIssueCommit -> Issue -> Issue
 setCommit commitValue issue = issue { commit = commitValue }

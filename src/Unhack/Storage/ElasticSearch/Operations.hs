@@ -249,7 +249,9 @@ instance ToJSON IssueMapping where
                                                                                    , "index" .= ("not_analyzed" :: T.Text) ]]]
                           , "commit"     .= object [ "type" .= ("nested" :: T.Text)
                                                    , "properties"
-                                                       .= object [ "hash" .= object [ "type"   .= ("string"       :: T.Text)
+                                                       .= object [ "_id"  .= object [ "type"   .= ("string"       :: T.Text)
+                                                                                    , "index"  .= ("not_analyzed" :: T.Text) ]
+                                                                 , "hash" .= object [ "type"   .= ("string"       :: T.Text)
                                                                                     , "index"  .= ("not_analyzed" :: T.Text) ]
                                                                  , "time" .= object [ "type"   .= ("date"         :: T.Text)
                                                                                     , "format" .= ("epoch_second" :: T.Text) ]]]
