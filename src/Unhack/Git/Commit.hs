@@ -13,7 +13,8 @@ import Unhack.Process
 
 -- Public API.
 
--- Gets a commit's text in the "git_log" format for the given commit hash.
+-- Gets a commit's text in the "hash_unix_timestamp" format for the given commit
+-- hash.
 hashesToCommitsText :: FilePath -> [T.Text] -> IO (T.Text)
 hashesToCommitsText directory hashes = lazyProcess command directory
     where command = T.concat ["git show -s --format=%H_%at ", hashesText]
