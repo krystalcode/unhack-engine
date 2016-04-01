@@ -36,7 +36,7 @@ load filepath = do
 indexSettingsFromConfig :: T.Text -> StorageConfig -> StorageIndexSettings
 indexSettingsFromConfig indexKey config = matchAsList !! 0
     where allIndexes  = indexes config
-          matchAsList = filter (\x@(StorageIndexSettings key _ _ _) -> key /= indexKey) allIndexes
+          matchAsList = filter (\x@(StorageIndexSettings key _ _ _) -> key == indexKey) allIndexes
 
 {-
   @Issue(
