@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Unhack.Pubsub.Dispatcher
        ( dispatch ) where
 
@@ -6,8 +8,7 @@ module Unhack.Pubsub.Dispatcher
 
 import qualified Data.ByteString.Char8 as BS (split, unpack, ByteString)
 import qualified Data.Text as T (pack)
-import qualified Unhack.Pubsub.Repository as UPR
-import qualified Unhack.Storage.ElasticSearch.Config as USEC (StorageConfig, StorageIndexSettings)
+import qualified Unhack.Pubsub.Repository as UPR (analyseAll, clone)
 import qualified Unhack.Storage.ElasticSearch.Config as USEC (indexSettingsFromConfig, StorageConfig, StorageIndexSettings)
 
 
@@ -48,6 +49,13 @@ dispatch config message = do
                     labels="release"
                 )
             -}
+            print $ "Action of type '" ++ action ++ "' performed"
+
+        -- Request to analyse all commits for the active branches.
+        "repositories_analyse_all" -> do
+            let repositoryId = T.pack (BS.unpack $ messageParts !! 1)
+            print $ "Dispatching message of type '" ++ action ++ "'"
+            UPR.analyseAll config (USEC.indexSettingsFromConfig "repository" config) repositoryId
             print $ "Action of type '" ++ action ++ "' performed"
 
         _ -> error $ concat ["The pubsub message type '", action, "' is not recognised."]
