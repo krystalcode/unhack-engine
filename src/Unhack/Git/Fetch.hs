@@ -9,8 +9,9 @@ module Unhack.Git.Fetch
 -- Imports.
 
 import Control.Monad (unless)
-import qualified Data.Text as T (concat, unpack, Text)
+import qualified Data.Text as T (concat, intercalate, unpack, Text)
 import System.Directory (createDirectoryIfMissing, doesDirectoryExist)
+import qualified Unhack.Git.Location as UGL (base)
 import Unhack.Process
 
 -- Public API
@@ -29,7 +30,7 @@ clone vendor owner repository = do
     createDirectoryIfMissing True directory
     lazyProcess command directory
     where command   = T.concat ["git clone --no-checkout ", url, " ", repository]
-          directory = T.unpack $ T.concat ["/repositories/", vendor, "/", owner]
+          directory = T.unpack $ T.intercalate "/" [UGL.base, vendor, owner]
           url       = case vendor of
 
                           "bitbucket" -> T.concat ["git@bitbucket.org:", owner, "/", repository, ".git"]
