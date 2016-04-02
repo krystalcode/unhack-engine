@@ -16,22 +16,29 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Unhack.Commit
+                     , Unhack.Data.Branch
                      , Unhack.Data.EmBranch
+                     , Unhack.Data.EmCommit
                      , Unhack.Git.Commit
                      , Unhack.Git.Config
                      , Unhack.Git.Contents
+                     , Unhack.Git.Branch
                      , Unhack.Git.Fetch
+                     , Unhack.Git.Location
                      , Unhack.Git.Tree
                      , Unhack.Issue
                      , Unhack.Pubsub.Dispatcher
                      , Unhack.Pubsub.Repository
                      , Unhack.Parser
                      , Unhack.Process
+                     , Unhack.Data.EmIssueCommit
                      , Unhack.Data.Repository
                      , Unhack.Data.EmbeddedRepository
                      , Unhack.Storage.ElasticSearch.Config
+                     , Unhack.Storage.ElasticSearch.Data.Repository
                      , Unhack.Storage.ElasticSearch.Operations
   build-depends:       aeson >= 0.10.0.0 && < 1
+                     , attoparsec >= 0.13.0.1 && < 1
                      , base >= 4.7 && < 5
                      , bloodhound >= 0.10.0.0 && < 1
                      , bytestring >= 0.10.6.0 && < 1
