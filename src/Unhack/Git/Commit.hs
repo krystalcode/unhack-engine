@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Unhack.Git.Commit
-       ( hashesToCommitsText
+       ( getCommits
+       , hashesToCommitsText
        , logCommitsText
        , logTextToCommits
        ) where
@@ -12,6 +13,28 @@ import Unhack.Process
 
 
 -- Public API.
+
+-- Get the EmIssueCommit object(s) as a list for:
+-- - All the commits in the given branch, if "all" is given as the only commit.
+-- - The given commits, if the list of commit does not contain only "all".
+-- - Or, the latest commit on the given branch, if no commit was given.
+-- - Or, the HEAD, if no branch was given.
+getCommits :: FilePath -> T.Text -> [T.Text] -> IO ([EmIssueCommit])
+getCommits directory branch ["all"] = do
+    commitsText <- logCommitsText directory branch 0
+    return $ logTextToCommits commitsText
+
+getCommits directory "" [] = do
+    commitsText <- hashesToCommitsText directory ["HEAD"]
+    return $ logTextToCommits commitsText
+
+getCommits directory branch [] = do
+    commitsText <- logCommitsText directory branch 1
+    return $ logTextToCommits commitsText
+
+getCommits directory _ commits = do
+    commitsText <- hashesToCommitsText directory commits
+    return $ logTextToCommits commitsText
 
 -- Gets a commit's text in the "hash_unix_timestamp" format for the given commit
 -- hash.
