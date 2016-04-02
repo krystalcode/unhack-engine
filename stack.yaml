@@ -5,10 +5,16 @@ resolver: lts-5.10
 
 # Local packages, usually specified by relative directory name
 packages:
-- '.'
-- location:
-    git: https://github.com/krystalcode/bloodhound.git
-    commit: a2dd6fa4c9cf9ae1b6b11b255943fa99893d0f92
+  - '.'
+  - location :
+      git    : https://github.com/krystalcode/bloodhound.git
+      commit : a2dd6fa4c9cf9ae1b6b11b255943fa99893d0f92
+  - location :
+      git    : https://github.com/bos/aeson.git
+      commit : 4de5a203eeeea593457bc92bc40062f3ea830426
+  - location :
+      git    : https://github.com/informatikr/hedis.git
+      commit : 8f7c5318fbc84c30659bf0a1775a5e15188fd9f8
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps: []
