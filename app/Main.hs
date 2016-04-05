@@ -34,6 +34,12 @@ main = do
         priority="low"
     )
     @Issue(
+        "Develop and support an improved annotation style"
+        type="feature"
+        priority="high"
+        labels="release"
+    )
+    @Issue(
         "Move these issues to the unhack.yaml file"
         type="task"
         priority="low"
