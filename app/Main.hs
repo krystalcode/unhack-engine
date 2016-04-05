@@ -29,6 +29,11 @@ main = do
 
 {-
     @Issue(
+        "Rename the program to unhack-engine"
+        type="task"
+        priority="low"
+    )
+    @Issue(
         "Move these issues to the unhack.yaml file"
         type="task"
         priority="low"
