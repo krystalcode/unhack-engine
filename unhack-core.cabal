@@ -19,6 +19,9 @@ library
                      , Unhack.Data.Branch
                      , Unhack.Data.EmBranch
                      , Unhack.Data.EmCommit
+                     , Unhack.Cmd.Indexes
+                     , Unhack.Cmd.Modes
+                     , Unhack.Cmd.PubSub
                      , Unhack.Git.Commit
                      , Unhack.Git.Config
                      , Unhack.Git.Contents
@@ -58,10 +61,6 @@ executable unhack-core-exe
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
-                     , bytestring
-                     , cmdargs
-                     , hedis
-                     , text
                      , unhack-core
   default-language:    Haskell2010
 
