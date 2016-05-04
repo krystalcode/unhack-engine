@@ -17,8 +17,12 @@ import Unhack.Process
 
 -- Get the full git tree on a specific commit.
 commitTree :: FilePath -> EmIssueCommit -> IO (T.Text)
-commitTree directory commit = strictProcess command directory
+commitTree directory commit = do
+    tree <- strictProcess command directory
+    return $ either handleLeft id tree
+
     where command = T.concat ["git ls-tree --full-tree --name-only -r ", (hash commit)]
+          handleLeft exitCode = error $ show exitCode
 
 commitTree' :: FilePath -> EmIssueCommit -> IO (EmIssueCommit, T.Text)
 commitTree' directory commit = do

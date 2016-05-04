@@ -4,9 +4,12 @@ module Unhack.Process
        ( lazyProcess
        , strictProcess ) where
 
-import Control.Exception (evaluate)
+
+-- Imports.
+
+import Control.Exception (handle, evaluate, SomeException(..))
 import qualified Data.Text as T (pack, unpack, Text)
-import System.Exit (ExitCode(ExitSuccess))
+import System.Exit (ExitCode(ExitSuccess, ExitFailure))
 import System.IO (hGetContents, hSetEncoding, utf8)
 import System.Process (createProcess, CreateProcess(..), StdStream(CreatePipe), shell, waitForProcess)
 
@@ -18,6 +21,11 @@ import System.Process (createProcess, CreateProcess(..), StdStream(CreatePipe), 
         "Is there any drawback in setting utf8 encoding on all processes?"
         type="bug"
         priority="low"
+    )
+    @Issue(
+        "Implement error handling for the lazyProcess function as well"
+        type="bug"
+        priority="normal"
     )
 -}
 
@@ -33,8 +41,8 @@ lazyProcess command directory = do
         then return  $ T.pack stdOut
         else error $ stdErr ++ stdOut
 
-strictProcess :: T.Text -> FilePath -> IO (T.Text)
-strictProcess command directory = do
+strictProcess :: T.Text -> FilePath -> IO (Either ExitCode T.Text)
+strictProcess command directory = handle (\e -> handleException e) $ do
     (_, Just hout, Just herr, procHandle) <- createProcess $ createCommand command directory
     hSetEncoding hout utf8
     hSetEncoding herr utf8
@@ -43,9 +51,30 @@ strictProcess command directory = do
     stdErr   <- hGetContents herr
     evaluate (length stdErr)
     exitCode <- waitForProcess procHandle
+
+    {-
+      @Issue(
+        "Capture and return the exception message as well"
+        type="improvement"
+        priority="low"
+      )
+    -}
     if exitCode == ExitSuccess
-        then return $ T.pack stdOut
-        else error $ stdErr ++ stdOut
+        then return $ Right (T.pack stdOut)
+        else return $ Left exitCode --stdErr ++ stdOut ++ (show exitCode)
+
+    -- If an exception is thrown (instead of the process ending with failure),
+    -- then we return an ExitFailure code of 0. This way the function that
+    -- requested the process will know that an unknown IO Exception has
+    -- occurred.
+    {-
+      @Issue(
+        "Differentiate between IOException and other exceptions"
+        type="improvement"
+        priority="low"
+      )
+    -}
+    where handleException (SomeException e) = return $ Left (ExitFailure 0)
 
 
 -- Functions for internal use.
