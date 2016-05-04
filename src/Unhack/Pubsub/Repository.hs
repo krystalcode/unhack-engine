@@ -12,6 +12,7 @@ import Data.Maybe (fromJust, isNothing)
 import qualified Data.List as L (intersect)
 import qualified Data.Text as T (unpack, Text)
 import Database.Bloodhound
+import qualified Unhack.Config as UC (defaultConfigFile, load)
 import qualified Unhack.Data.EmBranch as UDEB
 import qualified Unhack.Data.EmIssueCommit as UDEIC (toCommits)
 import qualified Unhack.Data.EmbeddedRepository as UDER
@@ -21,7 +22,7 @@ import qualified Unhack.Git.Commit as UGCom (getCommits)
 import qualified Unhack.Git.Contents as UGCon (fileContents')
 import qualified Unhack.Git.Fetch as UGF (clone)
 import qualified Unhack.Git.Location as UGL (directory)
-import qualified Unhack.Git.Tree as UGT (commitTree', treeGlobFilter)
+import qualified Unhack.Git.Tree as UGT (commitTree', treeGlobFilter')
 import qualified Unhack.Issue as UI (bulkSetRepository)
 import qualified Unhack.Parser as UP (parseCommitFileString')
 import qualified Unhack.Storage.ElasticSearch.Config as USEC (indexSettingsFromConfig, StorageConfig, StorageIndexSettings)
@@ -188,23 +189,24 @@ analyseBranchAll config repositoryId repository branch = do
         )
     -}
 
-    -- Set the file-filtering patterns.
-    {-
-        @Issue(
-            "Get the filtering patterns from the repository's configuration"
-            type="bug"
-            priority="normal"
-            labels="release"
-        )
-    -}
-    let includePatterns = []
-    let excludePatterns = ["sites/all/libraries/htmlpurifier/benchmarks/samples/Lexer/4"]
-    let validExtensions = ["yml", "yaml", "hs", "js", "php", "html", "css", "scss", "module", "inc", "info", "install"]
+    -- Get the tree of files for the commit, filtered by inclusion and exclusion
+    -- patterns.
 
-    -- Get the tree of files for the commit, filtered by inclusion and
-    -- exclusion patterns.
+    -- We first need the git tree of files for each commit.
     trees <- mapM (UGT.commitTree' directory) commitsRecords
-    let files = map (UGT.treeGlobFilter includePatterns excludePatterns validExtensions) trees
+
+    --  We check if the tree contains the default configuration file, and we
+    -- load it for the commits that it exists. The commits that do not have it
+    -- are provided with the default configuration.
+    let configsExist = map (\(commit, files) -> (elem UC.defaultConfigFile files, commit)) trees
+    configs <- mapM (\(configExists, commit) -> UC.load configExists directory commit) configsExist
+
+    -- We zip the configurations with the commit/tree pairs, and we load the
+    -- filtered files based on the file patterns define in the configuration. We
+    -- therefore end up with a flat list of files (commit/file pairs) that are
+    -- the ones that we will be scanning for Issues.
+    let treesWithConfig = zipWith (\config (commit, tree) -> (commit, config, tree)) configs trees
+    let files = map UGT.treeGlobFilter' treesWithConfig
 
     -- Get the contents of all files to be parsed.
     contents <- mapM (UGCon.fileContents' directory) $ concat files

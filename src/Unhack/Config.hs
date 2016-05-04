@@ -1,9 +1,19 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 
 module Unhack.Config
-       ( loadFromFile
+       ( defaultConfigFile
+       , load
        , loadFromGit
        , Config(..)
+       , Annotation(..)
+       , Analysis(..)
+       , AnalysisProperty(..)
+       , FilePatterns(..)
+       , Build(..)
+       , Rule(..)
+       , Condition(..)
+       , ConditionProperty(..)
+       , Action(..)
        ) where
 
 
@@ -25,7 +35,15 @@ import Unhack.Git.Contents (fileContents)
 
 -- Public API.
 
--- Load storage configuration from a file. If the file does not exist, return
+-- Load repository configuration from the default file on a git commit, if we are
+-- given that the file exists (based on the git tree file list). If we are given
+-- that the file does not exist, return the default configuration.
+load :: Bool -> FilePath -> EmIssueCommit -> IO (Config)
+load exists directory commit
+    | exists == True  = loadFromGit directory commit
+    | exists == False = return confDefault
+
+-- Load repository configuration from a file. If the file does not exist, return
 -- the default configuration.
 loadFromFile :: FilePath -> IO (Config)
 loadFromFile filepath = do
@@ -39,7 +57,7 @@ loadFromFile filepath = do
               | isDoesNotExistError e = return ""
               | otherwise             = throwIO e
 
--- Load storage configuration from the default file on a git commit. If the
+-- Load repository configuration from the default file on a git commit. If the
 -- file does not exist, return the default configuration.
 loadFromGit :: FilePath -> EmIssueCommit -> IO (Config)
 loadFromGit directory commit = loadFromGit' directory commit defaultConfigFile
@@ -379,8 +397,8 @@ instance ToJSON ActionData where
 defaultConfigFile :: T.Text
 defaultConfigFile = "unhack.yaml"
 
--- Load storage configuration from a file on a git commit. If the file does not
--- exist, return the default configuration.
+-- Load repository configuration from a file on a git commit. If the file does
+-- not exist, return the default configuration.
 loadFromGit' :: FilePath -> EmIssueCommit -> T.Text -> IO (Config)
 loadFromGit' directory commit file = do
     ymlData <- fileContents directory commit file `catch` handleExists
