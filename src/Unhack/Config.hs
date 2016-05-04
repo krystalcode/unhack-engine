@@ -1,7 +1,8 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 
 module Unhack.Config
-       ( load
+       ( loadFromFile
+       , loadFromGit
        , Config(..)
        ) where
 
@@ -14,17 +15,20 @@ import Data.Aeson.Types (typeMismatch)
 import qualified Data.ByteString.Char8 as BS (readFile)
 import Data.Maybe (fromJust, isNothing)
 import qualified Data.Text as T (Text);
+import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Yaml as Y (decode)
 import GHC.Generics (Generic)
 import System.IO.Error (isDoesNotExistError)
+import Unhack.Data.EmIssueCommit (EmIssueCommit)
+import Unhack.Git.Contents (fileContents)
 
 
 -- Public API.
 
 -- Load storage configuration from a file. If the file does not exist, return
 -- the default configuration.
-load :: FilePath -> IO (Config)
-load filepath = do
+loadFromFile :: FilePath -> IO (Config)
+loadFromFile filepath = do
     ymlData <- BS.readFile filepath `catch` handleExists
     let config = Y.decode ymlData :: Maybe Config
     if (isNothing config)
@@ -34,6 +38,12 @@ load filepath = do
     where handleExists e
               | isDoesNotExistError e = return ""
               | otherwise             = throwIO e
+
+-- Load storage configuration from the default file on a git commit. If the
+-- file does not exist, return the default configuration.
+loadFromGit :: FilePath -> EmIssueCommit -> IO (Config)
+loadFromGit directory commit = loadFromGit' directory commit defaultConfigFile
+
 
 -- Types.
 
@@ -325,3 +335,29 @@ instance FromJSON ActionData where
 instance ToJSON ActionData where
     toJSON (ActionDataStatus adsName) =
         object [ "name" .= adsName ]
+
+-- Default configuration file.
+{-
+  @Issue(
+    "Support a list of default files so that we can fallback to 'unhack.yml'"
+    type="improvement"
+    priority="low"
+    labels="ux"
+  )
+-}
+defaultConfigFile :: T.Text
+defaultConfigFile = "unhack.yaml"
+
+-- Load storage configuration from a file on a git commit. If the file does not
+-- exist, return the default configuration.
+loadFromGit' :: FilePath -> EmIssueCommit -> T.Text -> IO (Config)
+loadFromGit' directory commit file = do
+    ymlData <- fileContents directory commit file `catch` handleExists
+    let config = Y.decode (encodeUtf8 ymlData) :: Maybe Config
+    if (isNothing config)
+        then return confDefault
+        else return $ fromJust config
+
+    where handleExists e
+              | isDoesNotExistError e = return ""
+              | otherwise             = throwIO e
