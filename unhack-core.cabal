@@ -48,6 +48,7 @@ library
                      , bytestring >= 0.10.6.0 && < 1
                      , cmdargs >= 0.10 && < 1
                      , directory >= 1.2.2.0 && < 2
+                     , Glob >= 0.7.5 && < 1
                      , hedis >= 0.7.6 && < 1
                      , http-client >= 0.4.26.2 && < 1
                      , process >= 1.2.3.0 && < 2
