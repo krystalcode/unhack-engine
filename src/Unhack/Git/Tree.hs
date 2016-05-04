@@ -3,11 +3,12 @@
 module Unhack.Git.Tree
        ( commitTree
        , commitTree'
-       , treeValidFiles
-       , treeValidFiles'
+       , treeGlobFilter
        ) where
 
+import qualified Data.List as L (intersect)
 import qualified Data.Text as T (concat, filter, isPrefixOf, isSuffixOf, lines, null, pack, unpack, Text)
+import System.FilePath.Glob (compile, match, Pattern)
 import Unhack.Data.EmIssueCommit
 import Unhack.Process
 
@@ -27,56 +28,49 @@ commitTree' directory commit = do
 -- Convert a git tree (that contains all file paths as one text string) to a
 -- list of file paths, excluding file paths that are not valid under the
 -- requested schema.
-treeValidFiles :: [T.Text] -> [T.Text] -> [T.Text] -> T.Text -> [T.Text]
-treeValidFiles validPaths invalidPaths validExtensions tree = validFiles
+treeGlobFilter :: [T.Text] -> [T.Text] -> [T.Text] -> (EmIssueCommit, T.Text) -> [(EmIssueCommit, T.Text)]
+treeGlobFilter includePatterns excludePatterns extensionsPatterns (commit, tree) = zipWithCommit commit filteredFiles
     where files = filter (not . T.null) $ T.lines tree
-          validFiles = filter (\x -> hasValidPath x validPaths && not (hasInvalidPath x invalidPaths) && hasValidExtension x validExtensions) files
 
-treeValidFiles' :: [T.Text] -> [T.Text] -> [T.Text] -> (EmIssueCommit, T.Text) -> [(EmIssueCommit, T.Text)]
-treeValidFiles' validPaths invalidPaths validExtensions (commit, tree) = zipWithCommit commit validFiles
-    where validFiles = treeValidFiles validPaths invalidPaths validExtensions tree
+          -- Convert list of text patterns into glob Patterns.
+          includeGlobPatterns    = map (compile . T.unpack) includePatterns
+          excludeGlobPatterns    = map (compile . T.unpack) excludePatterns
+          extensionsGlobPatterns = map (compile . T.unpack) $ map (\x -> T.concat ["**/*.", x]) extensionsPatterns
+
+          -- Run all filters.
+          includeFilteredFiles    = filter (fileMatchesPatterns includeGlobPatterns) files
+          excludeFilteredFiles    = filter (fileDoesNotMatchPatterns excludeGlobPatterns) files
+          extensionsFilteredFiles = filter (fileMatchesPatterns extensionsGlobPatterns) files
+
+          -- Get the intersection of all filters.
+          filteredFiles = L.intersect includeFilteredFiles $ L.intersect excludeFilteredFiles extensionsFilteredFiles
+
+          -- Prepare the result as required in tuples.
           zipWithCommit commitRecord filesList = [(commitRecord, file) | file <- filesList]
 
 
 -- Functions for internal use.
 
--- Functions for determining whether a given file is valid under the requested
--- schema.
+-- Determine if a file path matches a list of glob patterns.
+fileMatchesPatterns :: [Pattern] -> T.Text -> Bool
+fileMatchesPatterns [] _ = True
+fileMatchesPatterns patterns file = fileMatchesPatterns' patterns file
 
-{-
-    @Issue(
-        "Is there any benefit in using FilePath instead of Text?"
-        type="investigation"
-        priority="low"
-    )
--}
+fileMatchesPatterns' :: [Pattern] -> T.Text -> Bool
+fileMatchesPatterns' [] _ = False
+fileMatchesPatterns' (x:xs) file
+    | isMatch == True  = True
+    | isMatch == False = fileMatchesPatterns' xs file
+    where isMatch = match x $ T.unpack file
 
-hasPath :: T.Text -> T.Text -> Bool
-hasPath file folder = folder `T.isPrefixOf` file
+-- Determine if a file path does not match a list of glob patterns.
+fileDoesNotMatchPatterns :: [Pattern] -> T.Text -> Bool
+fileDoesNotMatchPatterns [] _ = True
+fileDoesNotMatchPatterns patterns file = fileDoesNotMatchPatterns' patterns file
 
-hasValidPath :: T.Text -> [T.Text] -> Bool
-hasValidPath _ [] = True
-hasValidPath file validPaths = elem True $ map (hasPath file) validPaths
-
-hasInvalidPath :: T.Text -> [T.Text] -> Bool
-hasInvalidPath _ [] = False
-hasInvalidPath file invalidPaths = elem True $ map (hasPath file) invalidPaths
-
-hasExtension :: T.Text -> T.Text -> Bool
-hasExtension file extension = (T.concat [".", extension]) `T.isSuffixOf` file
-
-{-
-    @Issue(
-        "Allow empty list as an argument to valid extensions after we can
-        detect binary files"
-        type="bug"
-        priority="normal"
-    )
--}
-
-hasValidExtension :: T.Text -> [T.Text] -> Bool
-hasValidExtension file [] = error . T.unpack $ T.concat
-    [ "A list of valid extensions must be specified in order to validate the extension of the file \""
-    , file
-    , "\"" ]
-hasValidExtension file validExtensions = elem True $ map (hasExtension file) validExtensions
+fileDoesNotMatchPatterns' :: [Pattern] -> T.Text -> Bool
+fileDoesNotMatchPatterns' [] file = True
+fileDoesNotMatchPatterns' (x:xs) file
+    | isMatch == True  = False
+    | isMatch == False = fileDoesNotMatchPatterns' xs file
+    where isMatch = match x $ T.unpack file

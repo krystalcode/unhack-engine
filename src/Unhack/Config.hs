@@ -57,13 +57,18 @@ data Annotation = Annotation
 data Analysis = Analysis
     { anaName         :: T.Text
     , anaProperties   :: [AnalysisProperty]
-    , anaFilePatterns :: [T.Text] } deriving (Generic, Show)
+    , anaFilePatterns :: FilePatterns } deriving (Generic, Show)
 
 data AnalysisProperty = AnalysisProperty
     { apName   :: T.Text
     , apType   :: T.Text
     , apValue  :: [T.Text]
     , apPolicy :: T.Text } deriving (Generic, Show)
+
+data FilePatterns = FilePatterns
+    { fpInclude    :: [T.Text]
+    , fpExclude    :: [T.Text]
+    , fpExtensions :: [T.Text] } deriving (Generic, Show)
 
 data Build = Build
     { bRules :: [Rule] } deriving (Generic, Show)
@@ -151,10 +156,11 @@ instance ToJSON Analysis where
                , "properties"    .= anaProperties
                , "file_patterns" .= anaFilePatterns ]
 
--- Default Analysis Name, Properties, File Patterns.
-anaDefaultName         = "Issue"
-anaDefaultProperties   = [ apTypes, apPriorities, apLabels ]
-anaDefaultFilePatterns = []
+-- Default Analysis Name.
+anaDefaultName = "Issue"
+
+-- Default Analysis Properties.
+anaDefaultProperties = [ apTypes, apPriorities, apLabels ]
 
 -- Analysis properties available by default.
 apTypes = AnalysisProperty
@@ -191,7 +197,32 @@ instance ToJSON AnalysisProperty where
                , "value"  .= apValue
                , "policy" .= apPolicy ]
 
--- Defualt Build configuration.
+-- Default Analysis File Patterns.
+anaDefaultFilePatterns = FilePatterns
+    { fpInclude    = fpDefaultInclude
+    , fpExclude    = fpDefaultExclude
+    , fpExtensions = fpDefaultExtensions }
+
+-- Analysis File Patterns available by default.
+fpDefaultInclude    = []
+fpDefaultExclude    = []
+fpDefaultExtensions = []
+
+-- From/To JSON definitions for FilePatterns.
+instance FromJSON FilePatterns where
+    parseJSON (Object v) = FilePatterns
+                           <$> v .:? "include"    .!= fpDefaultInclude
+                           <*> v .:? "exclude"    .!= fpDefaultExclude
+                           <*> v .:? "extensions" .!= fpDefaultExtensions
+    parseJSON invalid    = typeMismatch "FilePatterns" invalid
+
+instance ToJSON FilePatterns where
+    toJSON (FilePatterns fpInclude fpExclude fpExtensions) =
+        object [ "include"    .= fpInclude
+               , "exclude"    .= fpExclude
+               , "extensions" .= fpExtensions ]
+
+-- Default Build configuration.
 bDefault = Build
     { bRules = rDefault }
 

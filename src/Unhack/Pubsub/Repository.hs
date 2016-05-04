@@ -21,7 +21,7 @@ import qualified Unhack.Git.Commit as UGCom (getCommits)
 import qualified Unhack.Git.Contents as UGCon (fileContents')
 import qualified Unhack.Git.Fetch as UGF (clone)
 import qualified Unhack.Git.Location as UGL (directory)
-import qualified Unhack.Git.Tree as UGT (commitTree', treeValidFiles')
+import qualified Unhack.Git.Tree as UGT (commitTree', treeGlobFilter)
 import qualified Unhack.Issue as UI (bulkSetRepository)
 import qualified Unhack.Parser as UP (parseCommitFileString')
 import qualified Unhack.Storage.ElasticSearch.Config as USEC (indexSettingsFromConfig, StorageConfig, StorageIndexSettings)
@@ -204,7 +204,7 @@ analyseBranchAll config repositoryId repository branch = do
     -- Get the tree of files for the commit, filtered by inclusion and
     -- exclusion patterns.
     trees <- mapM (UGT.commitTree' directory) commitsRecords
-    let files = map (UGT.treeValidFiles' includePatterns excludePatterns validExtensions) trees
+    let files = map (UGT.treeGlobFilter includePatterns excludePatterns validExtensions) trees
 
     -- Get the contents of all files to be parsed.
     contents <- mapM (UGCon.fileContents' directory) $ concat files
