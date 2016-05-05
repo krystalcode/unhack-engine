@@ -7,10 +7,13 @@ module Unhack.Issue
        , bulkSetCommit
        , displayIssue
        , emptyIssue
+       , propertyStringToList
        , Issue(..)
        ) where
 
+import Data.Char (isSpace)
 import Data.List
+import qualified Data.Text as T (dropWhile, dropWhileEnd, null, pack, splitOn, unpack)
 import Data.Aeson
 import Unhack.Data.EmIssueCommit
 import Unhack.Data.EmbeddedRepository
@@ -40,19 +43,31 @@ displayIssue issue = unlines (["{"] `union` indentedProperties `union` ["}"])
                            nonEmptyProperties = filter (\x -> x /= "") renderedProperties
                            indentedProperties = map ("    " ++) nonEmptyProperties
 
-{--
+{-
   @Issue(
     "There must be a better way than pattern matching",
     type="bug",
+    priority="normal",
+  )
+  @Issue(
+    "Replace all calls for the 'kind' property with calls for the 'type' property",
+    type="refactoring",
     priority="normal",
   )
 -}
 accessProperty :: Issue -> String -> String
 accessProperty issue "file" = file issue
 accessProperty issue "title" = title issue
+accessProperty issue "type" = kind issue
 accessProperty issue "kind" = kind issue
 accessProperty issue "priority" = priority issue
 accessProperty issue "labels" = labels issue
+
+-- Convert a multi-value property from a comma-separated string to a list of strings.
+propertyStringToList :: String -> [String]
+propertyStringToList labels = map T.unpack $ filter (not . T.null) trimmed
+    where list    = T.splitOn "," $ T.pack labels
+          trimmed = map (T.dropWhile isSpace . T.dropWhileEnd isSpace) list
 
 bulkSetProperty :: [Issue] -> String -> String -> [Issue]
 bulkSetProperty issues propertyKey propertyValue

@@ -15,7 +15,8 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Unhack.Commit
+  exposed-modules:     Unhack.Build.Condition
+                     , Unhack.Commit
                      , Unhack.Config
                      , Unhack.Data.Branch
                      , Unhack.Data.EmBranch
