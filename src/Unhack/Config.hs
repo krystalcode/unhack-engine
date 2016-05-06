@@ -258,6 +258,9 @@ instance ToJSON Build where
 rDefault = [ rPassing, rWarning, rFailing ]
 
 -- Rules available by default.
+{- @Issue( "Define data type for the operators and use Maybe Operator instead of 'nop'"
+           type="improvement"
+           priority="low" ) -}
 rPassing = Rule
     { rOperator   = "nop"
     , rConditions = [ condPassing ]

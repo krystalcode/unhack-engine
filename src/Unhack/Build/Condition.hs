@@ -18,14 +18,31 @@ import qualified Unhack.Issue  as UDI (accessProperty, propertyStringToList, Iss
 -- Calculates whether a list of Issues meet a list of Conditions, joined by the given operator.
 areMet :: [UC.Condition] -> T.Text -> [UDI.Issue] -> Bool
 areMet conditions operator issues
-    | operator == "and" = not . elem False $ isMetList
-    | operator == "or"  = elem True isMetList
+    | operator == "and"      = not . elem False $ isMetList
+    | operator == "or"       = elem True isMetList
+    -- Default to the "and" operator otherwise. This can happen if we have only one condition, or if there is a typo in
+    -- the configuration.
+    {-
+      @Issue(
+        "Providing a default operator in case of error should happen when loading the configuration"
+        type="bug"
+        priority="normal"
+      )
+    -}
+    | otherwise = not . elem False $ isMetList
     where isMetList = map (isMet' issues) conditions
           isMet'    = flip isMet
 
 -- Calculates whether a list of Issues meet a Condition.
 isMet :: UC.Condition -> [UDI.Issue] -> Bool
 isMet condition issues
+    {-
+      @Issue(
+        "Implement validation that ensures the condition type is one of the supported ones"
+        type="bug"
+        priority="normal"
+      )
+    -}
     | _type == "minimum" = realCount >= requiredCount
     | _type == "maximum" = realCount <= requiredCount
     where realCount     = propertiesCount properties operator issues
@@ -54,8 +71,18 @@ propertiesCount properties operator issues = length $ filter (filterBy operator)
 
           -- Calculate the final result for an Issue, depending on the given operator.
           filterBy operator issue
-              | operator == "and" = not . elem False $ runFilters issue
-              | operator == "or"  = elem True $ runFilters issue
+              | operator == "and"   = not . elem False $ runFilters issue
+              | operator == "or"    = elem True $ runFilters issue
+              -- Default to the "and" operator otherwise. This can happen if we have only one property, or if there is a
+              -- typo in the configuration.
+              {-
+                @Issue(
+                  "Providing a default operator in case of error should happen when loading the configuration"
+                  type="bug"
+                  priority="normal"
+                )
+              -}
+              | otherwise = not . elem False $ runFilters issue
 
           -- Returns whether the annotation has the property with the given name and value.
           propertyEquals name value issue = T.unpack value == UDI.accessProperty issue (T.unpack name)
