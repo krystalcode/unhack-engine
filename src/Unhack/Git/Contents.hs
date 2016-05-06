@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Unhack.Git.Contents
-       ( fileContents
+       ( commitContents
+       , fileContents
        , fileContents'
        ) where
 
@@ -12,6 +13,12 @@ import Unhack.Process
 
 
 -- Public API.
+
+-- Get the contents for the given files on a specific commits.
+commitContents :: FilePath -> (EmIssueCommit, [T.Text]) -> IO (EmIssueCommit, [(T.Text, T.Text)])
+commitContents directory (commit, files) = do
+    contents <- mapM (fileContents directory commit) files
+    return $ (commit, zipWith (\file content -> (file, content)) files contents)
 
 -- Get the contents of a file on a specific commit.
 fileContents :: FilePath -> EmIssueCommit -> T.Text -> IO (T.Text)

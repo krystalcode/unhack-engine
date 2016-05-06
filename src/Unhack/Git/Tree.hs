@@ -31,10 +31,17 @@ commitTree' directory commit = do
     tree <- commitTree directory commit
     return (commit, filter (not . T.null) $ T.lines tree)
 
--- Convert a git tree (given as a list of file paths) to a list of file paths,
--- excluding file paths that are not valid under the requested schema.
-treeGlobFilter :: [T.Text] -> [T.Text] -> [T.Text] -> (EmIssueCommit, [T.Text]) -> [(EmIssueCommit, T.Text)]
-treeGlobFilter includePatterns excludePatterns extensionsPatterns (commit, files) = zipWithCommit commit filteredFiles
+-- Filter a git tree (given as a list of file paths) to exclude file paths that are not valid under the given glob
+-- patterns.
+treeGlobFilter' :: (EmIssueCommit, UC.Config, [T.Text]) -> (EmIssueCommit, [T.Text])
+treeGlobFilter' (commit, config, files) = treeGlobFilter includePatterns excludePatterns extensionsPatterns (commit, files)
+    where includePatterns    = UC.fpInclude filePatterns
+          excludePatterns    = UC.fpExclude filePatterns
+          extensionsPatterns = UC.fpExtensions filePatterns
+          filePatterns       = UC.anaFilePatterns . UC.annAnalysis $ UC.confAnnotations config !! 0
+
+treeGlobFilter :: [T.Text] -> [T.Text] -> [T.Text] -> (EmIssueCommit, [T.Text]) -> (EmIssueCommit, [T.Text])
+treeGlobFilter includePatterns excludePatterns extensionsPatterns (commit, files) = (commit, filteredFiles)
           -- Convert list of text patterns into glob Patterns.
     where includeGlobPatterns    = map (compile . T.unpack) includePatterns
           excludeGlobPatterns    = map (compile . T.unpack) excludePatterns
@@ -50,13 +57,6 @@ treeGlobFilter includePatterns excludePatterns extensionsPatterns (commit, files
 
           -- Prepare the result as required in tuples.
           zipWithCommit commitRecord filesList = [(commitRecord, file) | file <- filesList]
-
-treeGlobFilter' :: (EmIssueCommit, UC.Config, [T.Text]) -> [(EmIssueCommit, T.Text)]
-treeGlobFilter' (commit, config, files) = treeGlobFilter includePatterns excludePatterns extensionsPatterns (commit, files)
-    where includePatterns    = UC.fpInclude filePatterns
-          excludePatterns    = UC.fpExclude filePatterns
-          extensionsPatterns = UC.fpExtensions filePatterns
-          filePatterns       = UC.anaFilePatterns . UC.annAnalysis $ UC.confAnnotations config !! 0
 
 
 -- Functions for internal use.

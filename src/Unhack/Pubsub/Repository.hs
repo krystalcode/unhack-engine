@@ -12,19 +12,22 @@ import Data.Maybe (fromJust, isNothing)
 import qualified Data.List as L (intersect)
 import qualified Data.Text as T (unpack, Text)
 import Database.Bloodhound
+import Network.HTTP.Client
+
+import qualified Unhack.Build.Rule as UBR (apply)
 import qualified Unhack.Config as UC (defaultConfigFile, load)
 import qualified Unhack.Data.EmBranch as UDEB
-import qualified Unhack.Data.EmIssueCommit as UDEIC (toCommits)
+import qualified Unhack.Data.EmIssueCommit as UDEIC (toCommits, EmIssueCommit(..))
 import qualified Unhack.Data.EmbeddedRepository as UDER
 import qualified Unhack.Data.Repository as UDR
 import qualified Unhack.Git.Branch as UGB (branchesList)
 import qualified Unhack.Git.Commit as UGCom (getCommits)
-import qualified Unhack.Git.Contents as UGCon (fileContents')
+import qualified Unhack.Git.Contents as UGCon (commitContents)
 import qualified Unhack.Git.Fetch as UGF (clone)
 import qualified Unhack.Git.Location as UGL (directory)
 import qualified Unhack.Git.Tree as UGT (commitTree', treeGlobFilter')
 import qualified Unhack.Issue as UI (bulkSetRepository)
-import qualified Unhack.Parser as UP (parseCommitFileString')
+import qualified Unhack.Parser as UP (parseCommitContents)
 import qualified Unhack.Storage.ElasticSearch.Config as USEC (indexSettingsFromConfig, StorageConfig, StorageIndexSettings)
 import qualified Unhack.Storage.ElasticSearch.Data.Repository as USEDR (get, markAccessible, markProcessed)
 import qualified Unhack.Storage.ElasticSearch.Operations as USEO (bulkIndexDocuments', bulkIndexIssues)
@@ -152,7 +155,7 @@ analyseAll config indexSettings repositoryId = do
     )
 -}
 analyseBranchAll :: USEC.StorageConfig -> T.Text -> UDR.Repository -> T.Text -> IO ()
-analyseBranchAll config repositoryId repository branch = do
+analyseBranchAll storageConfig repositoryId repository branch = do
     -- Get the directory where the repository is located on the disk.
     let directory = UGL.directory repository
 
@@ -178,7 +181,7 @@ analyseBranchAll config repositoryId repository branch = do
 
     -- Create the commit records and store them to Elastic Search.
     let fullCommitsRecords = UDEIC.toCommits commitsRecords repositoryId
-    indexCommitsResponse <- USEO.bulkIndexDocuments' config (USEC.indexSettingsFromConfig "commit" config) fullCommitsRecords
+    indexCommitsResponse <- USEO.bulkIndexDocuments' storageConfig (USEC.indexSettingsFromConfig "commit" storageConfig) fullCommitsRecords
     {-
         @Issue(
             "Go through the response and log an error if not all Commits where
@@ -189,39 +192,76 @@ analyseBranchAll config repositoryId repository branch = do
         )
     -}
 
+    -- Get the ids of the commits from the response and create a list of 'EmIssueCommit' records that contain those ids.
+    let body                  = responseBody indexCommitsResponse
+    let eitherResult          = eitherDecode body :: Either String BulkEsResult
+    let result                = either error id eitherResult
+    let resultItems           = berItems result
+    let resultItemsInner      = map bericCreate resultItems
+    let commitsIds            = map berId resultItemsInner
+    let commitsRecordsWithIds = zipWith (\commitId commit -> commit { UDEIC._id = commitId }) commitsIds commitsRecords
     -- Get the tree of files for the commit, filtered by inclusion and exclusion
     -- patterns.
 
     -- We first need the git tree of files for each commit.
-    trees <- mapM (UGT.commitTree' directory) commitsRecords
+    trees <- mapM (UGT.commitTree' directory) commitsRecordsWithIds
 
-    --  We check if the tree contains the default configuration file, and we
+    -- We check if the tree contains the default configuration file, and we
     -- load it for the commits that it exists. The commits that do not have it
     -- are provided with the default configuration.
-    let configsExist = map (\(commit, files) -> (elem UC.defaultConfigFile files, commit)) trees
-    configs <- mapM (\(configExists, commit) -> UC.load configExists directory commit) configsExist
+    let repoConfigsExist = map (\(commit, files) -> (elem UC.defaultConfigFile files, commit)) trees
+    repoConfigs <- mapM (\(repoConfigExists, commit) -> UC.load repoConfigExists directory commit) repoConfigsExist
 
     -- We zip the configurations with the commit/tree pairs, and we load the
     -- filtered files based on the file patterns define in the configuration. We
     -- therefore end up with a flat list of files (commit/file pairs) that are
     -- the ones that we will be scanning for Issues.
-    let treesWithConfig = zipWith (\config (commit, tree) -> (commit, config, tree)) configs trees
-    let files = map UGT.treeGlobFilter' treesWithConfig
+    let treesWithRepoConfig = zipWith (\repoConfig (commit, tree) -> (commit, repoConfig, tree)) repoConfigs trees
+    let files = map UGT.treeGlobFilter' treesWithRepoConfig
 
     -- Get the contents of all files to be parsed.
-    contents <- mapM (UGCon.fileContents' directory) $ concat files
+    contents <- mapM (UGCon.commitContents directory) files
 
     -- Get all issues for the files' contents.
-    let issues = concat $ map UP.parseCommitFileString' contents
+    let issues = map UP.parseCommitContents contents
 
+    -- Apply rules define in the repository configuration per commit.
+    {-
+        @Issue(
+            "Support a default configuration per project/repository provided by user through the web UI"
+            type="feature"
+            priority="low"
+        )
+        @Issue(
+            "Support constructing a build message together with the build status"
+            type="bug"
+            priority="high"
+        )
+        @Issue(
+            "Support storing log messages that would be used to display in the web UI any errors
+            that occurred during the build"
+            type="feature"
+            priority="normal"
+        )
+        @Issue(
+            "Update the branch and the repository with the head commit and build results"
+            type="bug"
+            priority="high"
+        )
+    -}
+    let issuesWithRepoConfig = zipWith (\repoConfig (commit, commitIssues) -> (commit, repoConfig, commitIssues)) repoConfigs issues
+    rulesResult <- mapM_ (\(commit, repoConfig, commitIssues) -> UBR.apply storageConfig repoConfig commit commitIssues) issuesWithRepoConfig
+
+    -- If there are issues found, send them to Elastic Search.
     case (length issues) of
 
         0 -> print "No issues found on any of the commits for this branch."
 
         _ -> do
-            let emRepository = UDER.emptyEmbeddedRepository { UDER._id = repositoryId, UDER.url = (UDR.url repository) }
-            let projectIssues = UI.bulkSetRepository issues emRepository
-            response <- USEO.bulkIndexIssues config (USEC.indexSettingsFromConfig "issue" config) projectIssues
+            let emRepository  = UDER.emptyEmbeddedRepository { UDER._id = repositoryId, UDER.url = (UDR.url repository) }
+            let flatIssues    = concat $ map (\(commit, commitIssues) -> commitIssues) issues
+            let projectIssues = UI.bulkSetRepository flatIssues emRepository
+            response <- USEO.bulkIndexIssues storageConfig (USEC.indexSettingsFromConfig "issue" storageConfig) projectIssues
             {-
                 @Issue(
                     "Go through the response and log an error if not all Issues

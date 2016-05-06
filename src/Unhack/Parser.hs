@@ -4,6 +4,7 @@ module Unhack.Parser
        , parseFileString'
        , parseCommitFileString
        , parseCommitFileString'
+       , parseCommitContents
        ) where
 
 import qualified Data.Text as T (unpack, Text)
@@ -38,6 +39,12 @@ parseCommitFileString commit file input = bulkSetCommit issues commit
 
 parseCommitFileString' :: (EmIssueCommit, T.Text, T.Text) -> [Issue]
 parseCommitFileString' (commit, file, input) = parseCommitFileString commit file input
+
+-- Given a commit and a list of its files with their contents, return the commit with a list of the issues contained in
+-- the given files' contents
+parseCommitContents :: (EmIssueCommit, [(T.Text, T.Text)]) -> (EmIssueCommit, [Issue])
+parseCommitContents (commit, contents) = (commit, concat $ map (\(file, content) -> parseCommitFileString commit file content) contents)
+
 
 -- Functions for internal use.
 extractIssues :: String -> [String]

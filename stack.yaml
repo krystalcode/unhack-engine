@@ -8,7 +8,7 @@ packages:
   - '.'
   - location :
       git    : https://github.com/krystalcode/bloodhound.git
-      commit : a2dd6fa4c9cf9ae1b6b11b255943fa99893d0f92
+      commit : eca95bf4439b2cf70f49d4257934e0da31bf58a7
   - location :
       git    : https://github.com/bos/aeson.git
       commit : 4de5a203eeeea593457bc92bc40062f3ea830426
