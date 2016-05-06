@@ -41,7 +41,7 @@ instance FromJSON Commit where
                            <$> v .: "repositoryId"
                            <*> v .: "hash"
                            <*> v .: "time"
-                           <*> v .: "buildStatue"
+                           <*> v .: "buildStatus"
                            <*> v .: "buildMessage"
     parseJSON invalid    = typeMismatch "Commit" invalid
 
