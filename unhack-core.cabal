@@ -15,7 +15,9 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Unhack.Build.Condition
+  exposed-modules:     Unhack.Build.Action
+                     , Unhack.Build.Condition
+                     , Unhack.Build.Rule
                      , Unhack.Commit
                      , Unhack.Config
                      , Unhack.Data.Branch
@@ -40,6 +42,7 @@ library
                      , Unhack.Data.Repository
                      , Unhack.Data.EmbeddedRepository
                      , Unhack.Storage.ElasticSearch.Config
+                     , Unhack.Storage.ElasticSearch.Data.Commit
                      , Unhack.Storage.ElasticSearch.Data.Repository
                      , Unhack.Storage.ElasticSearch.Operations
   build-depends:       aeson >= 0.10.0.0 && < 1

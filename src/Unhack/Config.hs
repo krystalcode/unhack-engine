@@ -14,6 +14,7 @@ module Unhack.Config
        , Condition(..)
        , ConditionProperty(..)
        , Action(..)
+       , ActionData(..)
        ) where
 
 
