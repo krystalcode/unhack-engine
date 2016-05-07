@@ -13,6 +13,7 @@ import qualified Database.Redis        as R  (connect, connectHost, defaultConne
 
 import           Unhack.Cmd.Modes
 import qualified Unhack.Pubsub.Dispatcher            as UPD  (dispatch)
+import qualified Unhack.Pubsub.Router                as UPR  (getChannel)
 import qualified Unhack.Storage.ElasticSearch.Config as USEC (load)
 
 -- Public API.
@@ -21,6 +22,9 @@ runPubSub :: Cmd -> IO ()
 runPubSub cmd = do
     -- Load storage configuration.
     storageConfig <- USEC.load $ cmdStorageConfigFile cmd
+
+    -- Get the channel that we will be listening to.
+    subscribedChannel <- UPR.getChannel
 
     -- Initiate a connection to Redis.
     {-
@@ -36,17 +40,17 @@ runPubSub cmd = do
     -- Listen to Redis PubSub channels for messages and dispatch them
     -- accordingly.
     print $ T.concat [ "Listening to the following Redis PubSub channels: "
-                     , T.intercalate ", " $ map (T.pack . BS.unpack) channelsToSubscribe
+                     , T.intercalate ", " $ map (T.pack . BS.unpack) [subscribedChannel]
                      , "."]
 
-    R.runRedis conn $ R.pubSub (R.subscribe channelsToSubscribe) $ \msg -> do
-      let channel = BS.unpack $ R.msgChannel msg
+    R.runRedis conn $ R.pubSub (R.subscribe [subscribedChannel]) $ \msg -> do
+      let channel = R.msgChannel msg
       let message = R.msgMessage msg
 
-      print $ "Received message on channel '" ++ channel ++ "'"
+      print $ "Received message on channel '" ++ (BS.unpack channel) ++ "'"
 
-      case (channel) of
-          "uh_engine" -> do
+      case (channel == subscribedChannel) of
+          True -> do
               UPD.dispatch storageConfig message
 
           {-
@@ -56,21 +60,13 @@ runPubSub cmd = do
                   priority="low"
                   labels="log management"
               )
+              @Issue(
+                  "Is there really any case where we would received messages on unrecognised channels?"
+                  type="investigation"
+                  priority="low"
+                  labels="clean up"
+              )
           -}
-          _ -> putStrLn $ "The Redis PubSub channel '" ++ channel ++ "' is not recognised."
+          False -> putStrLn $ "The Redis PubSub channel '" ++ (BS.unpack channel) ++ "' is not recognised."
 
       return mempty
-
-
--- Functions/types for internal use.
-
--- The Redis PubSub channels to which the program will be listening.
-{-
-    @Issue(
-        "Pass the channels to subscribe as a command line argument"
-        type="improvement"
-        priority="low"
-    )
--}
-channelsToSubscribe :: [BS.ByteString]
-channelsToSubscribe = ["uh_engine"]
