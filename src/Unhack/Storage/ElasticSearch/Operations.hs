@@ -15,9 +15,11 @@ module Unhack.Storage.ElasticSearch.Operations
        , deleteMappings
        , deleteMapping'
        , getDocument'
+       , mgetDocuments'
        , indexDocument'
        , updateDocument'
        , bulkIndexDocuments'
+       , bulkUpdateDocuments'
        , bulkIndexIssues
        ) where
 
@@ -25,9 +27,9 @@ import Data.Aeson
 import qualified Data.Text as T (concat, pack, Text)
 import Data.Vector (fromList)
 import Database.Bloodhound
-import Network.HTTP.Client (defaultManagerSettings)
-import Unhack.Commit
-import Unhack.Issue
+import Network.HTTP.Client (defaultManagerSettings, responseBody)
+
+import qualified Unhack.Issue                        as UDI (Issue)
 import qualified Unhack.Storage.ElasticSearch.Config as USC
 
 {-
@@ -103,6 +105,24 @@ getDocument' config settings@(USC.StorageIndexSettings key _ _ _) docId
 
 {-
     @Issue(
+        "Is there a way to unwrap the results here, even if they are of mixed types?"
+        type="investigation"
+        priority="low"
+    )
+-}
+mgetDocuments' :: USC.StorageConfig -> USC.StorageIndexSettings -> [DocId] -> IO (Reply)
+mgetDocuments' config settings@(USC.StorageIndexSettings key _ _ _) docsIds = withBH'' $ mgetDocuments maybeIndex maybeMapping docs
+    where withBH''     = withBH' config
+          docs         = map (\docId -> (maybeIndex, maybeMapping, docId)) docsIds
+          maybeIndex   = Just (indexName settings)
+          maybeMapping = case key of
+                             "branch"     -> Just branchMapping
+                             "commit"     -> Just commitMapping
+                             "issue"      -> Just issueMapping
+                             "repository" -> Just repositoryMapping
+
+{-
+    @Issue(
         "Review default index document settings"
         type="improvement"
         priority="low"
@@ -142,6 +162,16 @@ bulkIndexDocuments' config settings@(USC.StorageIndexSettings key _ _ _) docs = 
                                         "branch"     -> branchMapping
                                         "commit"     -> commitMapping
                                         "issue"      -> issueMapping
+
+bulkUpdateDocuments' :: (ToJSON patch) => USC.StorageConfig -> USC.StorageIndexSettings -> [(DocId, patch)] -> IO (Reply)
+bulkUpdateDocuments' config settings@(USC.StorageIndexSettings key _ _ _) patches = withBH' config $ bulk (fromList ops)
+    where ops = [BulkUpdate index documentMapping docId (toJSON docPatch) | (docId, docPatch) <- patches]
+          index = indexName settings
+          documentMapping = case key of "repository" -> repositoryMapping
+                                        "branch"     -> branchMapping
+                                        "commit"     -> commitMapping
+                                        "issue"      -> issueMapping
+
 {-
     @Issue(
         "Use the bulkIndexDocuments' function instead"
@@ -150,7 +180,7 @@ bulkIndexDocuments' config settings@(USC.StorageIndexSettings key _ _ _) docs = 
         labels="cleanup"
     )
 -}
-bulkIndexIssues :: USC.StorageConfig -> USC.StorageIndexSettings -> [Issue] -> IO (Reply)
+bulkIndexIssues :: USC.StorageConfig -> USC.StorageIndexSettings -> [UDI.Issue] -> IO (Reply)
 bulkIndexIssues config settings issues = withBH' config $ bulk (fromList ops)
     where ops = [BulkIndex index issueMapping (DocId "") (toJSON issue) | issue <- issues]
           index = indexName settings
@@ -246,7 +276,9 @@ instance ToJSON BranchMapping where
     toJSON BranchMapping
         = object [ "branch"
             .= object [ "properties"
-                .= object [ "headCommit"   .= object [ "type"  .= ("nested"       :: T.Text)
+                .= object [ "commitsIds"   .= object [ "type"  .= ("string"       :: T.Text)
+                                                     , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "headCommit"   .= object [ "type"  .= ("nested"       :: T.Text)
                                                      , "properties"
                                                          .= object [ "_id"          .= object [ "type"   .= ("string"       :: T.Text)
                                                                                               , "index"  .= ("not_analyzed" :: T.Text) ]
@@ -284,6 +316,8 @@ instance ToJSON CommitMapping where
                           , "buildStatus"  .= object [ "type"   .= ("string"       :: T.Text)
                                                      , "index"  .= ("not_analyzed" :: T.Text) ]
                           , "buildMessage" .= object [ "type"   .= ("string"       :: T.Text)
+                                                     , "index"  .= ("not_analyzed" :: T.Text) ]
+                          , "isProcessed"  .= object [ "type"   .= ("boolean"      :: T.Text)
                                                      , "index"  .= ("not_analyzed" :: T.Text) ] ]]]
 
 

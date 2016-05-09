@@ -3,6 +3,7 @@
 module Unhack.Data.EmIssueCommit
        ( emptyEmIssueCommit
        , textToEmIssueCommit
+       , fromCommits
        , toCommits
        , EmIssueCommit(..)
        ) where
@@ -30,11 +31,11 @@ emptyEmIssueCommit = EmIssueCommit
     , hash = ""
     , time = "" }
 
-toCommits :: [EmIssueCommit] -> T.Text -> [UC.Commit]
-toCommits emCommits repositoryId = map mapCommit emCommits
-    where mapCommit emCommit = UC.emptyCommit { UC.repositoryId = repositoryId
-                                              , UC.hash         = hash emCommit
-                                              , UC.time         = time emCommit }
+fromCommits :: [(T.Text, UC.Commit)] -> [EmIssueCommit]
+fromCommits commits = map fromCommit commits
+
+toCommits :: T.Text -> [EmIssueCommit] -> [UC.Commit]
+toCommits repositoryId emCommits = toCommits' emCommits repositoryId
 
 -- Converts text to a Commit record.
 -- The text needs to be in one of the following supported formats:
@@ -61,6 +62,17 @@ textToEmIssueCommit commitText format = error . T.unpack $ T.concat ["The reques
 
 -- Functions/types for internal use.
 
+fromCommit :: (T.Text, UC.Commit) -> EmIssueCommit
+fromCommit (commitId, commit) = EmIssueCommit { _id  = commitId
+                                              , hash = UC.hash commit
+                                              , time = UC.time commit }
+
+toCommits' :: [EmIssueCommit] -> T.Text -> [UC.Commit]
+toCommits' emCommits repositoryId = map mapCommit emCommits
+    where mapCommit emCommit = UC.emptyCommit { UC.repositoryId = repositoryId
+                                              , UC.hash         = hash emCommit
+                                              , UC.time         = time emCommit }
+
 instance FromJSON EmIssueCommit where
     parseJSON (Object v) = EmIssueCommit
                            <$> v .: "_id"
@@ -73,3 +85,6 @@ instance ToJSON EmIssueCommit where
         object [ "_id"  .= _id
                , "hash" .= hash
                , "time" .= time ]
+
+instance Eq EmIssueCommit where
+    (EmIssueCommit _id1 hash1 time1) == (EmIssueCommit _id2 hash2 time2) = _id1 == _id2 && hash1 == hash2 && time1 == time2

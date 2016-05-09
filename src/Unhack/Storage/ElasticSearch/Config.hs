@@ -2,6 +2,7 @@
 
 module Unhack.Storage.ElasticSearch.Config
        ( load
+       , indexName
        , indexSettingsFromConfig
        , StorageConfig(..)
        , StorageIndexSettings(..)
@@ -21,6 +22,7 @@ import qualified Data.ByteString.Char8 as BS (readFile)
 import Data.Maybe (fromJust)
 import qualified Data.Text as T (Text)
 import qualified Data.Yaml as Y (decode)
+import qualified Database.Bloodhound as BH
 import GHC.Generics (Generic)
 
 -- Public API.
@@ -31,6 +33,10 @@ load filepath = do
     ymlData <- BS.readFile filepath
     let config = Y.decode ymlData :: Maybe StorageConfig
     return $ fromJust config
+
+-- Get the name of an index from its settings.
+indexName :: StorageIndexSettings -> BH.IndexName
+indexName settings = BH.IndexName $ name settings
 
 -- Get the settings for a specific index from the storage configuration.
 indexSettingsFromConfig :: T.Text -> StorageConfig -> StorageIndexSettings

@@ -2,6 +2,7 @@
 
 module Unhack.Storage.ElasticSearch.Data.Commit
        ( get
+       , mget
        , setBuildStatus )
        where
 
@@ -18,8 +19,8 @@ import           Network.HTTP.Client
 -- Internal dependencies.
 
 import qualified Unhack.Commit                           as UDC  (Commit(..))
-import qualified Unhack.Storage.ElasticSearch.Config     as USEC (StorageConfig, StorageIndexSettings)
-import qualified Unhack.Storage.ElasticSearch.Operations as USEO (getDocument', updateDocument')
+import qualified Unhack.Storage.ElasticSearch.Config     as USEC (indexSettingsFromConfig, StorageConfig, StorageIndexSettings)
+import qualified Unhack.Storage.ElasticSearch.Operations as USEO (getDocument', mgetDocuments', updateDocument')
 
 
 -- Public API.
@@ -39,6 +40,19 @@ get config indexSettings commitId = do
     let maybeCommit = fmap _source . foundResult $ result
 
     return maybeCommit
+
+mget :: USEC.StorageConfig -> [T.Text] -> IO ([Maybe UDC.Commit])
+mget storageConfig commitsIds = do
+    response <- USEO.mgetDocuments' storageConfig indexSettings docsIds
+
+    let body         = responseBody response
+    let eitherResult = eitherDecode body :: Either String (MgetEsResult UDC.Commit)
+    let result       = either error id eitherResult
+
+    return $ map (fmap _source . foundResult) $ mgetDocs result
+
+    where indexSettings = USEC.indexSettingsFromConfig "commit" storageConfig
+          docsIds       = map DocId commitsIds
 
 -- Set the 'buildStatus' for a commit to the given value.
 setBuildStatus :: USEC.StorageConfig -> USEC.StorageIndexSettings -> T.Text -> UDC.Commit -> T.Text -> IO (Reply)

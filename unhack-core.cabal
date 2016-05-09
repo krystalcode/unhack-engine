@@ -35,6 +35,7 @@ library
                      , Unhack.Git.Tree
                      , Unhack.Issue
                      , Unhack.Pubsub.Dispatcher
+                     , Unhack.Pubsub.Publish
                      , Unhack.Pubsub.Repository
                      , Unhack.Pubsub.Router
                      , Unhack.Parser
@@ -43,6 +44,7 @@ library
                      , Unhack.Data.Repository
                      , Unhack.Data.EmbeddedRepository
                      , Unhack.Storage.ElasticSearch.Config
+                     , Unhack.Storage.ElasticSearch.Data.Branch
                      , Unhack.Storage.ElasticSearch.Data.Commit
                      , Unhack.Storage.ElasticSearch.Data.Repository
                      , Unhack.Storage.ElasticSearch.Operations
@@ -60,6 +62,7 @@ library
                      , process >= 1.2.3.0 && < 2
                      , random >= 1.1 && < 2
                      , regex-pcre >= 0.94.4 && < 1
+                     , split >= 0.2.3 && < 1
                      , text >= 1.2.2.0 && < 2
                      , vector >= 0.11.0.0 && < 1
                      , yaml >= 0.8.15.1 && < 1

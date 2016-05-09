@@ -3,6 +3,7 @@
 module Unhack.Git.Tree
        ( commitTree
        , commitTree'
+       , commitTreeLength
        , treeGlobFilter
        , treeGlobFilter'
        ) where
@@ -30,6 +31,17 @@ commitTree' :: FilePath -> EmIssueCommit -> IO (EmIssueCommit, [T.Text])
 commitTree' directory commit = do
     tree <- commitTree directory commit
     return (commit, filter (not . T.null) $ T.lines tree)
+
+-- Get the number of files on a specific commit.
+commitTreeLength :: FilePath -> EmIssueCommit -> IO (Int)
+commitTreeLength directory commit = do
+    tree <- strictProcess command directory
+    return $ either handleLeft treeLength tree
+
+    where command = T.concat ["git ls-tree --full-tree --name-only -r ", (hash commit)]
+          treeLines tree = filter (not . T.null) $ T.lines tree
+          treeLength tree = length $ treeLines tree
+          handleLeft exitCode = error $ show exitCode
 
 -- Filter a git tree (given as a list of file paths) to exclude file paths that are not valid under the given glob
 -- patterns.

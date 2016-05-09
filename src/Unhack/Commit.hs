@@ -22,13 +22,15 @@ data Commit = Commit { repositoryId :: T.Text
                      , time         :: T.Text
                      , buildStatus  :: T.Text
                      , buildMessage :: T.Text
+                     , isProcessed    :: Bool
                      } deriving (Generic, Show)
 
 emptyCommit = Commit { repositoryId = ""
                      , hash         = ""
                      , time         = ""
                      , buildStatus  = ""
-                     , buildMessage = "" }
+                     , buildMessage = ""
+                     , isProcessed  = False }
 
 bulkSetRepositoryId :: [Commit] -> T.Text -> [Commit]
 bulkSetRepositoryId commits repositoryId = map (\commit -> commit { repositoryId = repositoryId }) commits
@@ -43,12 +45,14 @@ instance FromJSON Commit where
                            <*> v .: "time"
                            <*> v .: "buildStatus"
                            <*> v .: "buildMessage"
+                           <*> v .: "isProcessed"
     parseJSON invalid    = typeMismatch "Commit" invalid
 
 instance ToJSON Commit where
-    toJSON (Commit repositoryId hash time buildStatus buildMessage) =
+    toJSON (Commit repositoryId hash time buildStatus buildMessage isProcessed) =
         object [ "repositoryId" .= repositoryId
                , "hash"         .= hash
                , "time"         .= time
                , "buildStatus"  .= buildStatus
-               , "buildMessage" .= buildMessage ]
+               , "buildMessage" .= buildMessage
+               , "isProcessed"  .= isProcessed ]
