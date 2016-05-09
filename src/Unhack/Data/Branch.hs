@@ -9,10 +9,16 @@ module Unhack.Data.Branch
 
 -- Imports.
 
+-- External dependencies.
+
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)
+import GHC.Generics     (Generic)
+
 import qualified Data.Text as T (Text)
-import GHC.Generics (Generic)
+
+-- Internal dependencies.
+
 import Unhack.Data.EmCommit (emptyEmCommit, EmCommit)
 
 

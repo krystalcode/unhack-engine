@@ -8,9 +8,10 @@ module Unhack.Cmd.Modes
 
 -- Imports.
 
-import qualified Data.Text as T (Text)
 import System.Console.CmdArgs.Implicit
-import System.Environment (withArgs)
+import System.Environment              (withArgs)
+
+import qualified Data.Text as T (Text)
 
 
 -- Public API.

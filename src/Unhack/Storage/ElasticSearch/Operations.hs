@@ -23,11 +23,19 @@ module Unhack.Storage.ElasticSearch.Operations
        , bulkIndexIssues
        ) where
 
+
+-- Imports.
+
+-- External dependencies.
+
 import Data.Aeson
-import qualified Data.Text as T (concat, pack, Text)
-import Data.Vector (fromList)
+import Data.Vector         (fromList)
 import Database.Bloodhound
 import Network.HTTP.Client (defaultManagerSettings, responseBody)
+
+import qualified Data.Text as T (concat, pack, Text)
+
+-- Internal dependencies.
 
 import qualified Unhack.Issue                        as UDI (Issue)
 import qualified Unhack.Storage.ElasticSearch.Config as USC

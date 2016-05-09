@@ -7,9 +7,17 @@ module Unhack.Parser
        , parseCommitContents
        ) where
 
-import qualified Data.Text as T (unpack, Text)
-import Data.List (intercalate)
+
+-- Imports.
+
+-- External dependencies.
+import Data.List       (intercalate)
 import Text.Regex.PCRE ((=~), getAllTextMatches)
+
+import qualified Data.Text as T (unpack, Text)
+
+-- Internal dependencies.
+
 import Unhack.Issue
 import Unhack.Data.EmIssueCommit
 

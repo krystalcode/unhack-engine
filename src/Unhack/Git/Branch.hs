@@ -9,7 +9,12 @@ module Unhack.Git.Branch
 
 -- Imports.
 
+-- External dependencies.
+
 import qualified Data.Text as T (filter, lines, stripPrefix, Text)
+
+-- Internal dependencies.
+
 import Unhack.Data.Branch
 import Unhack.Process
 

@@ -7,7 +7,15 @@ module Unhack.Git.Commit
        , logTextToCommits
        ) where
 
+
+-- Imports.
+
+-- External dependencies.
+
 import qualified Data.Text as T (concat, intercalate, lines, pack, unpack, Text)
+
+-- Internal dependencies.
+
 import Unhack.Data.EmIssueCommit
 import Unhack.Process
 

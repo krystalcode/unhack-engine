@@ -3,7 +3,12 @@ module Main where
 
 -- Imports.
 
+-- External dependencies.
+
 import System.Environment (getArgs)
+
+-- Internal dependencies.
+
 import Unhack.Cmd.Indexes
 import Unhack.Cmd.Modes
 import Unhack.Cmd.PubSub

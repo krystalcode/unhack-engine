@@ -8,9 +8,9 @@ module Unhack.Storage.ElasticSearch.Data.Branch
 
 -- External dependencies.
 
-import Data.Aeson ((.=), object, ToJSON)
+import Data.Aeson          ((.=), object, ToJSON)
 import Database.Bloodhound
-import GHC.Generics (Generic)
+import GHC.Generics        (Generic)
 
 import qualified Data.Text as T (Text)
 

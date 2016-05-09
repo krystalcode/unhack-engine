@@ -9,12 +9,18 @@ module Unhack.Storage.ElasticSearch.Data.Repository
 
 -- Imports.
 
-import Data.Aeson (eitherDecode, json, Value)
-import qualified Data.Text as T (Text)
+-- External dependencies.
+
+import Data.Aeson          (eitherDecode, json, Value)
 import Database.Bloodhound
 import Network.HTTP.Client
-import qualified Unhack.Data.Repository as UDR
-import qualified Unhack.Storage.ElasticSearch.Config as USEC (StorageConfig, StorageIndexSettings)
+
+import qualified Data.Text as T (Text)
+
+-- Internal dependencies.
+
+import qualified Unhack.Data.Repository                  as UDR
+import qualified Unhack.Storage.ElasticSearch.Config     as USEC (StorageConfig, StorageIndexSettings)
 import qualified Unhack.Storage.ElasticSearch.Operations as USEO (getDocument', updateDocument')
 
 

@@ -5,10 +5,14 @@ module Unhack.Data.EmbeddedRepository
        , EmbeddedRepository(..)
        ) where
 
+
+-- Imports.
+
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)
+import GHC.Generics     (Generic)
+
 import qualified Data.Text as T (Text)
-import GHC.Generics (Generic)
 
 
 -- Public API.

@@ -11,10 +11,16 @@ module Unhack.Data.EmIssueCommit
 
 -- Imports.
 
+-- Internal dependencies.
+
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)
+import GHC.Generics     (Generic)
+
 import qualified Data.Text as T (concat, filter, splitOn, unpack, Text)
-import GHC.Generics (Generic)
+
+-- Internal dependencies.
+
 import qualified Unhack.Commit as UC
 
 

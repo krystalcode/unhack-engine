@@ -8,6 +8,9 @@ module Unhack.Storage.ElasticSearch.Config
        , StorageIndexSettings(..)
        ) where
 
+
+-- Imports.
+
 {-
   @Issue(
     "Find out why restricting Data.Aeson imports results in error not
@@ -16,14 +19,17 @@ module Unhack.Storage.ElasticSearch.Config
     priority="low"
   )
 -}
-import Data.Aeson -- ((.=), (.:), parseJSON, toJSON, FromJSON, ToJSON)
+
+import Data.Aeson
 import Data.Aeson.Types (typeMismatch) --, object, Object)
+import Data.Maybe       (fromJust)
+import GHC.Generics     (Generic)
+
 import qualified Data.ByteString.Char8 as BS (readFile)
-import Data.Maybe (fromJust)
-import qualified Data.Text as T (Text)
-import qualified Data.Yaml as Y (decode)
-import qualified Database.Bloodhound as BH
-import GHC.Generics (Generic)
+import qualified Data.Text             as T (Text)
+import qualified Data.Yaml             as Y (decode)
+import qualified Database.Bloodhound   as BH
+
 
 -- Public API.
 

@@ -5,10 +5,19 @@ module Unhack.Data.Repository
        , Repository(..)
        ) where
 
+
+-- Imports.
+
+-- External dependencies.
+
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)
+import GHC.Generics     (Generic)
+
 import qualified Data.Text as T (Text)
-import GHC.Generics (Generic)
+
+-- Internal dependences.
+
 import Unhack.Data.EmBranch (emptyEmBranch, EmBranch)
 import Unhack.Data.EmCommit (emptyEmCommit, EmCommit)
 

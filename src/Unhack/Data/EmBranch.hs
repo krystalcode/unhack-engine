@@ -8,10 +8,15 @@ module Unhack.Data.EmBranch
 
 -- Imports.
 
+-- External dependencies.
+
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)
+import GHC.Generics     (Generic)
+
+-- Internal dependencies.
+
 import qualified Data.Text as T (Text)
-import GHC.Generics (Generic)
 
 
 -- Public API.

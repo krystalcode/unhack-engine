@@ -10,7 +10,12 @@ module Unhack.Git.Config
 
 -- Imports.
 
+-- External dependencies.
+
 import qualified Data.Text as T (pack, replace, Text)
+
+-- External dependencies.
+
 import Unhack.Process
 
 -- Public API

@@ -8,11 +8,18 @@ module Unhack.Git.Fetch
 
 -- Imports.
 
-import Control.Monad (unless)
-import qualified Data.Text as T (concat, intercalate, unpack, Text)
+-- External dependencies.
+
+import Control.Monad    (unless)
 import System.Directory (createDirectoryIfMissing, doesDirectoryExist)
-import qualified Unhack.Git.Location as UGL (base)
+
+import qualified Data.Text as T (concat, intercalate, unpack, Text)
+
+-- Interal dependencies.
+
 import Unhack.Process
+
+import qualified Unhack.Git.Location as UGL (base)
 
 -- Public API
 

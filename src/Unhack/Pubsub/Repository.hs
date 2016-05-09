@@ -8,35 +8,40 @@ module Unhack.Pubsub.Repository
 
 -- Imports.
 
-import Data.Aeson (eitherDecode)
-import Data.Maybe (fromJust, isJust, isNothing)
-import qualified Data.List as L (intersect, lookup, nub, concat)
-import qualified Data.List.Split as LS (chunksOf)
-import qualified Data.Text as T (intercalate, unpack, Text)
+-- External dependencies.
+
+import Data.Aeson          (eitherDecode)
+import Data.Maybe          (fromJust, isJust, isNothing)
 import Database.Bloodhound
 import Network.HTTP.Client
 
-import qualified Unhack.Build.Rule as UBR (apply)
-import qualified Unhack.Commit as UDC (Commit(..))
-import qualified Unhack.Config as UC (defaultConfigFile, load)
-import qualified Unhack.Data.EmBranch as UDEB
-import qualified Unhack.Data.EmIssueCommit as UDEIC (fromCommits, toCommits, EmIssueCommit(..))
-import qualified Unhack.Data.EmbeddedRepository as UDER
-import qualified Unhack.Data.Repository as UDR
-import qualified Unhack.Git.Branch as UGB (branchesList)
-import qualified Unhack.Git.Commit as UGCom (getCommits)
-import qualified Unhack.Git.Contents as UGCon (commitContents)
-import qualified Unhack.Git.Fetch as UGF (clone)
-import qualified Unhack.Git.Location as UGL (directory)
-import qualified Unhack.Git.Tree as UGT (commitTree', commitTreeLength, treeGlobFilter')
-import qualified Unhack.Issue as UI (bulkSetRepository)
-import qualified Unhack.Parser as UP (parseCommitContents)
-import qualified Unhack.Pubsub.Publish as UPP (publish)
-import qualified Unhack.Storage.ElasticSearch.Config as USEC (indexSettingsFromConfig, StorageConfig, StorageIndexSettings)
-import qualified Unhack.Storage.ElasticSearch.Data.Branch as USEDB (updateCommitsIds)
-import qualified Unhack.Storage.ElasticSearch.Data.Commit as USEDC (mget)
+import qualified Data.List       as L  (intersect, lookup, nub, concat)
+import qualified Data.List.Split as LS (chunksOf)
+import qualified Data.Text       as T  (intercalate, unpack, Text)
+
+-- Internal dependencies.
+
+import qualified Unhack.Build.Rule                            as UBR   (apply)
+import qualified Unhack.Commit                                as UDC   (Commit(..))
+import qualified Unhack.Config                                as UC    (defaultConfigFile, load)
+import qualified Unhack.Data.EmBranch                         as UDEB
+import qualified Unhack.Data.EmIssueCommit                    as UDEIC (fromCommits, toCommits, EmIssueCommit(..))
+import qualified Unhack.Data.EmbeddedRepository               as UDER
+import qualified Unhack.Data.Repository                       as UDR
+import qualified Unhack.Git.Branch                            as UGB   (branchesList)
+import qualified Unhack.Git.Commit                            as UGCom (getCommits)
+import qualified Unhack.Git.Contents                          as UGCon (commitContents)
+import qualified Unhack.Git.Fetch                             as UGF   (clone)
+import qualified Unhack.Git.Location                          as UGL   (directory)
+import qualified Unhack.Git.Tree                              as UGT   (commitTree', commitTreeLength, treeGlobFilter')
+import qualified Unhack.Issue                                 as UI    (bulkSetRepository)
+import qualified Unhack.Parser                                as UP    (parseCommitContents)
+import qualified Unhack.Pubsub.Publish                        as UPP   (publish)
+import qualified Unhack.Storage.ElasticSearch.Config          as USEC  (indexSettingsFromConfig, StorageConfig, StorageIndexSettings)
+import qualified Unhack.Storage.ElasticSearch.Data.Branch     as USEDB (updateCommitsIds)
+import qualified Unhack.Storage.ElasticSearch.Data.Commit     as USEDC (mget)
 import qualified Unhack.Storage.ElasticSearch.Data.Repository as USEDR (get, markAccessible, markProcessed)
-import qualified Unhack.Storage.ElasticSearch.Operations as USEO (bulkIndexDocuments', bulkIndexIssues)
+import qualified Unhack.Storage.ElasticSearch.Operations      as USEO  (bulkIndexDocuments', bulkIndexIssues)
 
 
 -- Public API.

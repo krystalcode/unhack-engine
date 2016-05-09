@@ -8,10 +8,11 @@ module Unhack.Process
 -- Imports.
 
 import Control.Exception (handle, evaluate, SomeException(..))
+import System.Exit       (ExitCode(ExitSuccess, ExitFailure))
+import System.IO         (hGetContents, hSetEncoding, utf8)
+import System.Process    (createProcess, CreateProcess(..), StdStream(CreatePipe), shell, waitForProcess)
+
 import qualified Data.Text as T (pack, unpack, Text)
-import System.Exit (ExitCode(ExitSuccess, ExitFailure))
-import System.IO (hGetContents, hSetEncoding, utf8)
-import System.Process (createProcess, CreateProcess(..), StdStream(CreatePipe), shell, waitForProcess)
 
 
 -- Public API.

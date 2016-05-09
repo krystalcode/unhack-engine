@@ -7,7 +7,12 @@ module Unhack.Git.Location
 
 -- Imports.
 
+-- External dependencies.
+
 import qualified Data.Text as T (intercalate, split, unpack, Text)
+
+-- Internal dependencies.
+
 import qualified Unhack.Data.Repository as UDR
 
 

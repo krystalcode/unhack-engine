@@ -6,8 +6,17 @@ module Unhack.Git.Contents
        , fileContents'
        ) where
 
-import qualified Data.Text as T (concat, unpack, Text)
+
+-- Imports.
+
+-- External dependencies.
+
 import System.Exit (ExitCode(ExitFailure))
+
+import qualified Data.Text as T (concat, unpack, Text)
+
+-- Internal dependencies.
+
 import Unhack.Data.EmIssueCommit
 import Unhack.Process
 

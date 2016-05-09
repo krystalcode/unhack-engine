@@ -8,12 +8,22 @@ module Unhack.Git.Tree
        , treeGlobFilter'
        ) where
 
+
+-- Imports.
+
+-- External dependencies.
+
+import System.FilePath.Glob (compile, match, Pattern)
+
 import qualified Data.List as L (intersect)
 import qualified Data.Text as T (concat, filter, isPrefixOf, isSuffixOf, lines, null, pack, unpack, Text)
-import System.FilePath.Glob (compile, match, Pattern)
-import qualified Unhack.Config as UC (Config(..), Annotation(..), Analysis(..), FilePatterns(..))
+
+-- Internal dependencies.
+
 import Unhack.Data.EmIssueCommit
 import Unhack.Process
+
+import qualified Unhack.Config as UC (Config(..), Annotation(..), Analysis(..), FilePatterns(..))
 
 
 -- Public API.

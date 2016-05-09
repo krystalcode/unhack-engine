@@ -11,10 +11,19 @@ module Unhack.Issue
        , Issue(..)
        ) where
 
-import Data.Char (isSpace)
-import Data.List
-import qualified Data.Text as T (dropWhile, dropWhileEnd, null, pack, splitOn, unpack)
+
+-- Imports.
+
+-- External dependencies.
+
 import Data.Aeson
+import Data.Char  (isSpace)
+import Data.List
+
+import qualified Data.Text as T (dropWhile, dropWhileEnd, null, pack, splitOn, unpack)
+
+-- Internal dependencies.
+
 import Unhack.Data.EmIssueCommit
 import Unhack.Data.EmbeddedRepository
 

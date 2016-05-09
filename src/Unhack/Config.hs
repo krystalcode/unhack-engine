@@ -20,18 +20,24 @@ module Unhack.Config
 
 -- Imports.
 
-import Control.Exception (catch, throwIO)
+-- External dependencies.
+
+import Control.Exception  (catch, throwIO)
 import Data.Aeson
-import Data.Aeson.Types (typeMismatch)
-import qualified Data.ByteString.Char8 as BS (readFile)
-import Data.Maybe (fromJust, isNothing)
-import qualified Data.Text as T (Text);
+import Data.Aeson.Types   (typeMismatch)
+import Data.Maybe         (fromJust, isNothing)
 import Data.Text.Encoding (encodeUtf8)
-import qualified Data.Yaml as Y (decode)
-import GHC.Generics (Generic)
-import System.IO.Error (isDoesNotExistError)
+import GHC.Generics       (Generic)
+import System.IO.Error    (isDoesNotExistError)
+
+import qualified Data.ByteString.Char8 as BS (readFile)
+import qualified Data.Text             as T  (Text)
+import qualified Data.Yaml             as Y  (decode)
+
+-- Internal dependencies.
+
 import Unhack.Data.EmIssueCommit (EmIssueCommit)
-import Unhack.Git.Contents (fileContents)
+import Unhack.Git.Contents       (fileContents)
 
 
 -- Public API.
