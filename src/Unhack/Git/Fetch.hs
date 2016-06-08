@@ -9,8 +9,7 @@ module Unhack.Git.Fetch
 
 -- External dependencies.
 
-import Control.Monad    (unless)
-import System.Directory (createDirectoryIfMissing, doesDirectoryExist)
+import System.Directory (createDirectoryIfMissing)
 
 import qualified Data.Text as T (concat, intercalate, unpack, Text)
 
@@ -20,7 +19,7 @@ import Unhack.Process
 
 import qualified Unhack.Git.Location as UGL (base)
 
--- Public API
+-- Public API.
 
 {-
     @Issue(
@@ -31,6 +30,7 @@ import qualified Unhack.Git.Location as UGL (base)
     )
 -}
 
+-- Clone a git repository.
 clone :: T.Text -> T.Text -> T.Text -> IO (T.Text)
 clone vendor owner repository = do
     createDirectoryIfMissing True directory
