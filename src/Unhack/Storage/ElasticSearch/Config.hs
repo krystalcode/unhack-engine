@@ -72,6 +72,7 @@ data StorageIndexSettings = StorageIndexSettings
     , replicas :: Int
     } deriving (Generic, Show)
 
+
 -- Functions/types for internal use.
 
 instance FromJSON StorageConfig where

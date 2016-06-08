@@ -21,6 +21,9 @@ import qualified Data.Text as T (unpack, Text)
 import Unhack.Issue
 import Unhack.Data.EmIssueCommit
 
+
+-- Public API.
+
 {-
   @Issue(
     "Use Text instead of String everywhere in the Parser",
@@ -29,7 +32,6 @@ import Unhack.Data.EmIssueCommit
   )
 -}
 
--- Public API.
 parseString :: T.Text -> [Issue]
 parseString input = map extractProperties issues
             where issues = extractIssues $ T.unpack input
