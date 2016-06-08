@@ -9,17 +9,24 @@ module Unhack.Data.EmCommit
 
 -- Imports.
 
+-- External dependencies.
+
 import Data.Aeson
-import Data.Aeson.Types (typeMismatch)
+import Data.Aeson.Types          (typeMismatch)
+import Database.Bloodhound.Types (DocId(..))
+import GHC.Generics              (Generic)
+
 import qualified Data.Text as T (Text)
-import GHC.Generics (Generic)
+
+-- Internal dependencies.
+
 import qualified Unhack.Commit as UC
 
 
 -- Public API.
 
 data EmCommit = EmCommit
-    { _id          :: T.Text
+    { _id          :: DocId
     , hash         :: T.Text
     , time         :: T.Text
     , buildStatus  :: T.Text
@@ -27,7 +34,7 @@ data EmCommit = EmCommit
 
 emptyEmCommit :: EmCommit
 emptyEmCommit = EmCommit
-    { _id          = ""
+    { _id          = DocId ""
     , hash         = ""
     , time         = ""
     , buildStatus  = ""
