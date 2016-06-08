@@ -2,6 +2,7 @@
 
 module Unhack.Data.EmCommit
        ( emptyEmCommit
+       , fromCommits
        , toCommits
        , EmCommit(..)
        ) where
@@ -40,6 +41,10 @@ emptyEmCommit = EmCommit
     , buildStatus  = ""
     , buildMessage = ""}
 
+-- Get a list of EmCommit records from a list of Commit records with their IDs.
+fromCommits :: [(DocId, UC.Commit)] -> [EmCommit]
+fromCommits commits = map (\(commitId, commit) -> fromCommit commitId commit) commits
+
 toCommits :: [EmCommit] -> T.Text -> [UC.Commit]
 toCommits emCommits repositoryId = map mapCommit emCommits
     where mapCommit emCommit = UC.emptyCommit { UC.repositoryId = repositoryId
@@ -50,6 +55,14 @@ toCommits emCommits repositoryId = map mapCommit emCommits
 
 
 -- Functions/types for internal use.
+
+-- Get an EmCommit record from a Commit record and it's ID.
+fromCommit :: DocId -> UC.Commit -> EmCommit
+fromCommit commitId commit = EmCommit { _id          = commitId
+                                      , hash         = UC.hash commit
+                                      , time         = UC.time commit
+                                      , buildStatus  = UC.buildStatus commit
+                                      , buildMessage = UC.buildMessage commit }
 
 instance FromJSON EmCommit where
     parseJSON (Object v) = EmCommit
