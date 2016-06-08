@@ -2,8 +2,7 @@
 
 module Unhack.Git.Fetch
        ( clone
-       , fetch
-       , fetchBranch ) where
+       , fetch ) where
 
 
 -- Imports.
@@ -44,6 +43,17 @@ clone vendor owner repository = do
 
                           _           -> error $ "Unsupported vendor '" ++ (T.unpack vendor) ++ "' while cloning the repository '" ++ (T.unpack repository)
 
+-- Fetch multiple branches from origin.
+fetch :: FilePath -> [T.Text] -> IO (T.Text)
+fetch directory branches = do
+    fetch' directory options
+
+    where options       = T.concat ["--update-head-ok ", "origin ", branchesPairs]
+          branchesPairs = T.intercalate " " $ map (\branch -> T.concat [branch, ":", branch]) branches
+
+
+-- Functions/types for internal use.
+
 {-
     @Issue(
         "Successful fetch outputs the result as an empty string"
@@ -52,9 +62,7 @@ clone vendor owner repository = do
     )
 -}
 
-fetch :: FilePath -> T.Text -> IO (T.Text)
-fetch directory options = lazyProcess command directory
+-- Execute a 'git fetch' command with the given options.
+fetch' :: FilePath -> T.Text -> IO (T.Text)
+fetch' directory options = lazyProcess command directory
     where command = T.concat ["git fetch ", options]
-
-fetchBranch :: FilePath -> T.Text -> IO (T.Text)
-fetchBranch directory branch = fetch directory $ T.concat ["origin ", branch]
