@@ -27,6 +27,9 @@ import qualified Data.Text as T (dropWhile, dropWhileEnd, null, pack, splitOn, u
 import Unhack.Data.EmIssueCommit
 import Unhack.Data.EmbeddedRepository
 
+
+-- Public API.
+
 {-
   @Issue(
     "Use Text instead of String everywhere in the Issue module",
@@ -34,8 +37,6 @@ import Unhack.Data.EmbeddedRepository
     priority="low"
   )
 -}
-
--- Public API.
 
 {-
   @Issue(
@@ -87,6 +88,7 @@ bulkSetCommit issues commit = map (setCommit commit) issues
 
 bulkSetRepository :: [Issue] -> EmbeddedRepository -> [Issue]
 bulkSetRepository issues repository = map (setRepository repository) issues
+
 
 -- Functions for internal use.
 
