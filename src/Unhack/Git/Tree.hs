@@ -42,13 +42,13 @@ commitTree' directory commit = do
     tree <- commitTree directory commit
     return (commit, filter (not . T.null) $ T.lines tree)
 
--- Get the number of files on a specific commit.
-commitTreeLength :: FilePath -> EmIssueCommit -> IO (Int)
-commitTreeLength directory commit = do
+-- Get the number of files on a specific commit, specified by its hash.
+commitTreeLength :: FilePath -> T.Text -> IO (Int)
+commitTreeLength directory hash = do
     tree <- strictProcess command directory
     return $ either handleLeft treeLength tree
 
-    where command = T.concat ["git ls-tree --full-tree --name-only -r ", (hash commit)]
+    where command = T.concat ["git ls-tree --full-tree --name-only -r ", hash]
           treeLines tree = filter (not . T.null) $ T.lines tree
           treeLength tree = length $ treeLines tree
           handleLeft exitCode = error $ show exitCode

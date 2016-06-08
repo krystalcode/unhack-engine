@@ -21,6 +21,9 @@ module Unhack.Storage.ElasticSearch.Operations
        , bulkIndexDocuments'
        , bulkUpdateDocuments'
        , bulkIndexIssues
+       , search'
+       , searchDefaultParams
+       , SearchParams(..)
        ) where
 
 
@@ -193,6 +196,16 @@ bulkIndexIssues config settings issues = withBH' config $ bulk (fromList ops)
     where ops = [BulkIndex index issueMapping (DocId "") (toJSON issue) | issue <- issues]
           index = indexName settings
 
+search' :: USC.StorageConfig -> USC.StorageIndexSettings -> Query -> SearchParams -> IO (Reply)
+search' config settings query params = withBH' config $ searchByIndex index search
+    where index  = indexName settings
+          search = Search (Just query) Nothing Nothing Nothing Nothing False (spFrom params) (spSize params) SearchTypeQueryThenFetch Nothing Nothing
+
+data SearchParams = SearchParams { spFrom :: From
+                                 , spSize :: Size }
+
+searchDefaultParams = SearchParams { spFrom = From 0
+                                   , spSize = Size 10 }
 
 -- Functions/types for internal use.
 

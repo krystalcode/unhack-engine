@@ -11,37 +11,38 @@ module Unhack.Pubsub.Repository
 -- External dependencies.
 
 import Data.Aeson          (eitherDecode)
+import Data.List.NonEmpty  (fromList)
 import Data.Maybe          (fromJust, isJust, isNothing)
 import Database.Bloodhound
 import Network.HTTP.Client
 
-import qualified Data.List       as L  (intersect, lookup, nub, concat)
+import qualified Data.List       as L  (concat, intersect, lookup, nub, union)
 import qualified Data.List.Split as LS (chunksOf)
-import qualified Data.Text       as T  (intercalate, unpack, Text)
+import qualified Data.Map        as M  (difference, elems, empty, foldl, fromList, insert, keys, lookup, map, mapWithKey, Map)
+import qualified Data.Text       as T  (intercalate, pack, unpack, Text)
 
 -- Internal dependencies.
 
 import qualified Unhack.Build.Rule                            as UBR   (apply)
-import qualified Unhack.Commit                                as UDC   (Commit(..))
+import qualified Unhack.Commit                                as UDC   (emptyCommit, Commit(..))
 import qualified Unhack.Config                                as UC    (defaultConfigFile, load)
 import qualified Unhack.Data.EmBranch                         as UDEB
 import qualified Unhack.Data.EmIssueCommit                    as UDEIC (fromCommits, toCommits, EmIssueCommit(..))
 import qualified Unhack.Data.EmbeddedRepository               as UDER
 import qualified Unhack.Data.Repository                       as UDR
-import qualified Unhack.Git.Branch                            as UGB   (branchesList)
-import qualified Unhack.Git.Commit                            as UGCom (getCommits)
+import qualified Unhack.Git.Branch                            as UGB   (originList)
+import qualified Unhack.Git.Commit                            as UGCom (list)
 import qualified Unhack.Git.Contents                          as UGCon (commitContents)
-import qualified Unhack.Git.Fetch                             as UGF   (clone)
+import qualified Unhack.Git.Fetch                             as UGF   (clone, fetch)
 import qualified Unhack.Git.Location                          as UGL   (directory)
 import qualified Unhack.Git.Tree                              as UGT   (commitTree', commitTreeLength, treeGlobFilter')
 import qualified Unhack.Issue                                 as UI    (bulkSetRepository)
 import qualified Unhack.Parser                                as UP    (parseCommitContents)
 import qualified Unhack.Pubsub.Publish                        as UPP   (publish)
 import qualified Unhack.Storage.ElasticSearch.Config          as USEC  (indexSettingsFromConfig, StorageConfig, StorageIndexSettings)
-import qualified Unhack.Storage.ElasticSearch.Data.Branch     as USEDB (updateCommitsIds)
-import qualified Unhack.Storage.ElasticSearch.Data.Commit     as USEDC (mget)
 import qualified Unhack.Storage.ElasticSearch.Data.Repository as USEDR (get, markAccessible, markProcessed)
-import qualified Unhack.Storage.ElasticSearch.Operations      as USEO  (bulkIndexDocuments', bulkIndexIssues)
+import qualified Unhack.Storage.ElasticSearch.Data.Commit     as USEDC (bulkIndex, bulkUpdateBranches, mget)
+import qualified Unhack.Storage.ElasticSearch.Operations      as USEO  (bulkIndexDocuments', bulkIndexIssues, search', searchDefaultParams, SearchParams(..))
 
 
 -- Public API.
@@ -134,128 +135,173 @@ analyseAll storageConfig indexSettings repositoryId = do
               0 -> print "Trying to analyse a repository that does not have any active branches."
 
               _ -> do
+
                   -- We first make a check that the branches set to be analysed actually exist. The branches that will
                   -- actually be analysed are therefore the intersection of all repository branches with the branches
                   -- set to be analysed.
-                  branchesList <- UGB.branchesList directory
-                  let branchesToAnalyseNames = L.intersect activeBranchesNames branchesList
-                  let branchesToAnalyse      = filter (\activeBranch -> UDEB.name activeBranch `elem` branchesToAnalyseNames) activeBranches
+                  originBranches <- UGB.originList directory
+                  let branchesToAnalyseNames      = L.intersect activeBranchesNames originBranches
+                  let branchesToAnalyse           = filter (\activeBranch -> UDEB.name activeBranch `elem` branchesToAnalyseNames) activeBranches
+                  let mBranchesToAnalyseWithNames = M.fromList $ map (\branch -> (UDEB.name branch, branch)) branchesToAnalyse
 
-                  {-
-                      @Issue(
-                          "Terminate execution if there are no branches to analyse"
-                          type="bug"
-                          priority="low"
-                          labels="release"
-                      )
-                  -}
+                  case (length branchesToAnalyse) of
 
-                  -- Get all commit records for the given branches. These are are EmIssueCommit records created for all
-                  -- commit hashes/times fetched by git, and they do not contain an _id since they are not stored to
-                  -- Elastic Search yet.
-                  {-
-                      @Issue(
-                          "Create an 'analyse_recent' task that will analyse only N recent commits, where N maybe
-                          different per repository"
-                          type="improvement"
-                          priority="low"
-                          labels="performance, release"
-                      )
-                      @Issue(
-                          "Log number of commits analysed by the 'analyse_recent' task in order to find a safe number of
-                          recent commits per repository"
-                          type="improvement"
-                          priority="low"
-                          labels="analytics, release"
-                      )
-                      @Issue(
-                          "Consider detecting commits not processed via cron job, in case they escape the
-                          'analyse_recent' task"
-                          type="bug"
-                          priority="low"
-                          labels="release"
-                      )
-                  -}
-                  commitsRecords <- mapM (UGCom.getCommits directory ["all"]) branchesToAnalyseNames
+                    0 -> print "The active branches given do not belong to this repository"
 
-                  -- Create a flat list of commits with duplicates removed. Duplicates can occur because one commit may
-                  -- be part of many branches.
-                  let commitsRecordsUnique = L.nub $ L.concat commitsRecords
+                    _ -> do
 
-                  {-
-                      @Issue(
-                          "Check which of the commits are already analysed so that we don't
-                          create duplicate commits/issues"
-                          type="bug"
-                          priority="low"
-                          labels="release"
-                      )
-                  -}
+                        -- Fetch the branches to analyse from the remote.
+                        fetchResponse <- UGF.fetch directory branchesToAnalyseNames
 
-                  -- Create the commit records and store them to Elastic Search.
-                  let fullCommitsRecords = UDEIC.toCommits repositoryId commitsRecordsUnique
-                  indexCommitsResponse <- USEO.bulkIndexDocuments' storageConfig (USEC.indexSettingsFromConfig "commit" storageConfig) fullCommitsRecords
+                        -- Get all commit records for the given branches in the form of a Map with the commits' hashes
+                        -- as keys and a tuple with the commit's time and the branches it belongs to as the value. We do
+                        -- have the commit's ID yet since the commit's information here are fetched from git and the
+                        -- commits may have not be stored to Elastic Search yet.
+                        {-
+                            @Issue(
+                                "Create an 'analyse_recent' task that will analyse only N recent commits, where N maybe
+                                different per repository"
+                                type="improvement"
+                                priority="low"
+                                labels="performance, release"
+                            )
+                            @Issue(
+                                "Log number of commits analysed by the 'analyse_recent' task in order to find a safe number of
+                                recent commits per repository"
+                                type="improvement"
+                                priority="low"
+                                labels="analytics, release"
+                            )
+                            @Issue(
+                                "Consider detecting commits not processed via cron job, in case they escape the
+                                'analyse_recent' task"
+                                type="bug"
+                                priority="low"
+                                labels="release"
+                            )
+                        -}
+                        mCommitsBranchNamesWithHashes <- UGCom.list directory branchesToAnalyseNames
+                        let mCommitsMaybeBranchRecordsWithHashes = M.map
+                                                                     (\ (time, branches)
+                                                                        -> (time, map ((flip M.lookup) mBranchesToAnalyseWithNames) branches))
+                                                                     mCommitsBranchNamesWithHashes
+                        let mCommitsJustBranchRecordsWithHashes  = M.map
+                                                                     (\ (time, branches)
+                                                                        -> (time, filter isJust branches))
+                                                                     mCommitsMaybeBranchRecordsWithHashes
+                        let mCommitsBranchRecordsWithHashes      = M.map
+                                                                     (\ (time, branches)
+                                                                        -> (time, map fromJust branches))
+                                                                     mCommitsJustBranchRecordsWithHashes
 
-                  {-
-                      @Issue(
-                          "Go through the response and log an error if not all Commits where
-                          properly stored"
-                          type="bug"
-                          priority="normal"
-                          labels="log management"
-                      )
-                  -}
+                        -- Create a map with the commits for which we already have records. It will be used to update
+                        -- the branches for existing records, and to create a map with the commits that are new.
+                        let hashes = M.keys mCommitsBranchNamesWithHashes
+                        let terms  = TermsQuery "hash" $ fromList hashes
+                        let query  = ConstantScoreFilterQuery terms (Boost 1)
 
-                  -- Get the ids of the commits from the response and create a list of 'EmIssueCommit' records that contain those ids.
-                  let body                  = responseBody indexCommitsResponse
-                  let eitherResult          = eitherDecode body :: Either String BulkEsResult
-                  let result                = either error id eitherResult
-                  let resultItems           = berItems result
-                  let resultItemsInner      = map bericCreate resultItems
-                  let commitsIds            = map berId resultItemsInner
+                        commitsResponse <- USEO.search' storageConfig (USEC.indexSettingsFromConfig "commit" storageConfig) query (USEO.searchDefaultParams { USEO.spSize = Size (length hashes) })
 
-                  -- Map the commits ids returned in the response to their branches.
-                  let branchesIdsWithCommitsHashes = zipWith (\emBranch branchEmCommits -> (UDEB._id emBranch, map UDEIC.hash branchEmCommits)) branchesToAnalyse commitsRecords
-                  let uniqueCommitsHashesWithIds   = zipWith (\emCommit commitId -> (UDEIC.hash emCommit, commitId)) commitsRecordsUnique commitsIds
-                  let branchesIdsWithCommitsIds    = map (\(branchId, hashes) -> (branchId, map (fromJust <$> (flip L.lookup) uniqueCommitsHashesWithIds) hashes)) branchesIdsWithCommitsHashes
+                        let body         = responseBody commitsResponse
+                        let eitherResult = eitherDecode body :: Either String (SearchResult UDC.Commit)
+                        let result       = either error id eitherResult
+                        let resultHits   = hits . searchHits $ result
 
-                  {- @Issue( "Handle errors"
-                             type="bug"
-                             priority="low"
-                             labels="error management, log management" ) -}
-                  bulkUpdateResponse <- USEDB.updateCommitsIds storageConfig branchesIdsWithCommitsIds
+                        let lMaybeCommitsWithIds       = map (\hit -> (hitDocId hit, hitSource hit)) resultHits
+                        let lJustCommitsWithIds        = filter (\(commitId, commit) -> isJust commit) lMaybeCommitsWithIds
+                        let lCommitsWithIds            = map (\(commitId, commit) -> (commitId, fromJust commit)) lJustCommitsWithIds
+                        let mExistingCommitsWithHashes = M.fromList $ map (\(commitId, commit) -> (UDC.hash commit, (commitId, commit))) lCommitsWithIds
 
-                  -- Send pubsub messages to analyse the commits.
-                  -- For repositories with large number of files, we want to analyse each commit on a separate task to
-                  -- avoid extreme memory consumption and blocking the processing engine instance for long time.
-                  -- For small repositories however, we can group processing multiple commits at one run in order to
-                  -- avoid the overhead that would be incurred if each commit would be processed as a separate task.
-                  -- Based on some experiments, processing 3000 files requires an acceptable amount of time for a single
-                  -- task and little memory consumption. We therefore take the number of files in latest commit as a
-                  -- sample and group commits together so that each task wouldn't process more than that number of
-                  -- files. One commit is the smallest single unit that can be processed, even if a commit would contain
-                  -- more files than the limit.
-                  filesCount <- UGT.commitTreeLength directory $ commitsRecordsUnique !! 0
-                  let nbCommits        = length commitsIds
-                  let maxIOOps         = 3000
-                  let nbChunks         = ceiling $ fromIntegral (filesCount * nbCommits) / fromIntegral maxIOOps
-                  let chunkSize        = ceiling $ fromIntegral nbCommits / fromIntegral nbChunks
-                  let commitsIdsChunks = LS.chunksOf chunkSize commitsIds
-                  let messagesPrefix   = ["repositories_analyse_commits", repositoryId]
-                  let messages         = map (\commitsIdsChunk -> (repositoryId, T.intercalate ":" $ (++) messagesPrefix commitsIdsChunk)) commitsIdsChunks
+                        {-
+                          @Issue(
+                            "Index new and update existing commits in one bulk request"
+                            type="improvement"
+                            priority="low"
+                            labels="performance"
+                          )
+                        -}
 
-                  {- @Issue( "Handle errors"
-                             type="bug"
-                             priority="low"
-                             labels="error management, log management" )
-                     @Issue( "Investigate a solution for better distribution of worker resources between repositories
-                             that run on the same engine instance"
-                             type="bug"
-                             priority="low"
-                             labels="ux" )-}
-                  pubsubResponse <- UPP.publish messages
+                        -- Create a map with the commits that are new and send them to Elastic Search.
+                        let mNewCommitsWithHashes = M.difference mCommitsBranchRecordsWithHashes mExistingCommitsWithHashes
+                        let lNewCommits           = M.elems $ M.mapWithKey
+                                                                (\ hash (time, branches)
+                                                                   -> UDC.emptyCommit { UDC.repositoryId = repositoryId
+                                                                                      , UDC.hash         = hash
+                                                                                      , UDC.time         = time
+                                                                                      , UDC.branches     = Just branches })
+                                                                mNewCommitsWithHashes
+                        lNewCommitsIds <- USEDC.bulkIndex storageConfig lNewCommits
 
-                  return mempty
+                        -- Create a map with the commit records that are already stored in Elastic Search, and update
+                        -- their branches.
+                        let mUpdatedCommitsWithHashes = M.mapWithKey
+                                                          (\hash (commitId, commit)
+                                                             -> ( commitId
+                                                                , commit { UDC.branches = Just (snd $ fromJust (M.lookup hash mCommitsBranchRecordsWithHashes)) }))
+                                                          mExistingCommitsWithHashes
+                        let mCommitsEmBranchesWithIds = M.foldl
+                                                          (\acc (commitId, commit) -> M.insert commitId (UDC.branches commit) acc)
+                                                          M.empty
+                                                          mUpdatedCommitsWithHashes
+                        updateCommitsResponse <- USEDC.bulkUpdateBranches storageConfig mCommitsEmBranchesWithIds
+
+                        -- Get a list of new commits ids + existing commits ids that are not already processed. These
+                        -- will be the commits that we will analyse.
+                        let lNonProcessedCommitsWithIds = filter (\(commitId, commit) -> (not . UDC.isProcessed) commit) lCommitsWithIds
+                        let lNonProcessedCommitsIds     = map (\(commitId, commit) -> commitId) lNonProcessedCommitsWithIds
+                        let lCommitsIdsToAnalyse        = L.union (map DocId lNewCommitsIds) lNonProcessedCommitsIds
+
+                        -- Send pubsub messages to analyse the commits.
+                        -- For repositories with large number of files, we want to analyse each commit on a separate task to
+                        -- avoid extreme memory consumption and blocking the processing engine instance for long time.
+                        -- For small repositories however, we can group processing multiple commits in one run in order to
+                        -- avoid the overhead that would be incurred if each commit would be processed as a separate task.
+                        -- Based on some experiments, processing 3000 files requires an acceptable amount of time for a single
+                        -- task and little memory consumption. We therefore take the number of files in latest commit as a
+                        -- sample and group commits together so that each task wouldn't process more than that number of
+                        -- files. One commit is the smallest single unit that can be processed, even if a commit would contain
+                        -- more files than the limit.
+                        {-
+                          @Issue(
+                            "Get the tree length from the most recent commit instead of the first in the map"
+                            type="bug"
+                            priority="low"
+                          )
+                        -}
+                        filesCount <- UGT.commitTreeLength directory $ hashes !! 0
+                        let nbCommits        = length lCommitsIdsToAnalyse
+                        let maxIOOps         = 3000
+                        let nbChunks         = ceiling $ fromIntegral (filesCount * nbCommits) / fromIntegral maxIOOps
+                        let chunkSize        = ceiling $ fromIntegral nbCommits / fromIntegral nbChunks
+                        let commitsIdsChunks = LS.chunksOf chunkSize $ map (T.pack . show) lCommitsIdsToAnalyse
+                        let messagesPrefix   = ["repositories_analyse_commits", repositoryId]
+                        let messages         = map (\commitsIdsChunk -> (repositoryId, T.intercalate ":" $ (++) messagesPrefix commitsIdsChunk)) commitsIdsChunks
+
+                        {- @Issue( "Handle errors"
+                                   type="bug"
+                                   priority="low"
+                                   labels="error management, log management" )
+                           @Issue( "Investigate a solution for better distribution of worker resources between repositories
+                                   that run on the same engine instance"
+                                   type="bug"
+                                   priority="low"
+                                   labels="ux" )-}
+                        pubsubResponse <- UPP.publish messages
+
+                        -- Send a pubsub message to update the head commits for all active branches, and for the repository
+                        -- itself as well.
+                        {-
+                          @Issue(
+                            "The updated records for the head commits are not available to search when this task is
+                            executed"
+                            type="bug"
+                            priority="normal"
+                            labels="release"
+                          )
+                        -}
+                        pubsubResponse <- UPP.publish [(repositoryId, T.intercalate ":" ["repositories_update_heads", repositoryId])]
+
+                        return mempty
 
 -- Analyse the given commits.
 analyseCommits :: USEC.StorageConfig -> USEC.StorageIndexSettings -> T.Text -> [T.Text] -> IO ()

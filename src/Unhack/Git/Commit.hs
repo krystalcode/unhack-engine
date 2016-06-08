@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Unhack.Git.Commit
-       ( getCommits
-       , hashesToCommitsText
+       ( hashesToCommitsText
+       , list
        , logCommitsText
        , logTextToCommits
        ) where
@@ -16,14 +16,25 @@ import qualified Data.Text as T (concat, intercalate, lines, pack, unpack, Text)
 
 -- Internal dependencies.
 
+import qualified Data.Map as M (fromListWith, Map)
+
 import Unhack.Data.EmIssueCommit
 import Unhack.Process
 
 
 -- Public API.
 
-getCommits :: FilePath -> [T.Text] -> T.Text -> IO ([EmIssueCommit])
-getCommits directory commits branch = getCommits' directory branch commits
+-- Get a Map of commits for the given branches. The Map item for each commit contains the commit's 'hash' as the key,
+-- and a tuple with the commit's time and the list of branches it belongs to as the value (the list of branches only
+-- from the given branches).
+list :: FilePath -> [T.Text] -> IO (M.Map T.Text (T.Text, [T.Text]))
+list directory branches = do
+    texts <- mapM (logCommitsText' directory 0) branches
+
+    let commitTuples = map ((textsToTuples "hash_unix_timestamp") . T.lines) texts
+    let commitsWithBranches = concat $ zipWith (\branch commits -> foldr (\(hash, time) acc -> (hash, (time, [branch])):acc) [] commits) branches commitTuples
+
+    return $ M.fromListWith (\(time1, branches1) (time2, branches2) -> (time1, branches1 ++ branches2)) commitsWithBranches
 
 -- Gets a commit's text in the "hash_unix_timestamp" format for the given commit
 -- hash.
@@ -39,6 +50,9 @@ logCommitsText directory branch nbCommits = lazyProcess command directory
     where command = T.concat ["git log ", branch, " --pretty=\"format:%H_%at\"", nbCommitsOption]
           nbCommitsOption = case nbCommits of 0 -> ""
                                               _ -> T.concat [" -n ", T.pack (show nbCommits)]
+
+logCommitsText' :: FilePath -> Int -> T.Text -> IO (T.Text)
+logCommitsText' directory nbCommits branch = logCommitsText directory branch nbCommits
 
 -- Takes text containing a list of commits, in the format returned by the
 -- "git log" command, and it converts it into a list of Commit records.
