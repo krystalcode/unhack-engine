@@ -490,6 +490,21 @@ updateHeads storageConfig indexSettings repositoryId = do
             updateRepositoryResponse <- USEDR.updateHeadCommits storageConfig repositoryIdWithEmCommit
             print updateRepositoryResponse
 
+            {-
+                @Issue(
+                    "Update branches and repository records in one query"
+                    type="improvement"
+                    priority="low"
+                    labels="performance"
+                )
+                @Issue(
+                    "Do not update branches and repository records where head commits have not changed"
+                    type="improvement"
+                    priority="low"
+                    labels="performance"
+                )
+            -}
+
             return mempty
 
 
