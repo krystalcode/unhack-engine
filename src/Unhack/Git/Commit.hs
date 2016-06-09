@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Unhack.Git.Commit
-       ( hashesToCommitsText
+       ( getHeads
+       , hashesToCommitsText
        , list
        , logCommitsText
        , logTextToCommits
@@ -12,7 +13,7 @@ module Unhack.Git.Commit
 
 -- External dependencies.
 
-import qualified Data.Text as T (concat, intercalate, lines, pack, unpack, Text)
+import qualified Data.Text as T (concat, filter, intercalate, lines, pack, splitOn, unpack, Text)
 
 -- Internal dependencies.
 
@@ -35,6 +36,10 @@ list directory branches = do
     let commitsWithBranches = concat $ zipWith (\branch commits -> foldr (\(hash, time) acc -> (hash, (time, [branch])):acc) [] commits) branches commitTuples
 
     return $ M.fromListWith (\(time1, branches1) (time2, branches2) -> (time1, branches1 ++ branches2)) commitsWithBranches
+
+-- Get the head commits of the given branches.
+getHeads :: FilePath -> [T.Text] -> IO ([Maybe EmIssueCommit])
+getHeads directory branches = mapM (getHead directory) branches
 
 -- Gets a commit's text in the "hash_unix_timestamp" format for the given commit
 -- hash.
@@ -61,6 +66,15 @@ logTextToCommits "" = []
 logTextToCommits input = map (textToCommit' "hash_unix_timestamp") $ T.lines input
 
 -- Functions for internal use.
+
+-- Get the head of the given branch.
+getHead :: FilePath -> T.Text -> IO (Maybe EmIssueCommit)
+getHead directory branch = do
+    commits <- getCommits' directory branch []
+    let commit = case length commits of
+                     0 -> Nothing
+                     _ -> Just (commits !! 0)
+    return commit
 
 -- Get the EmIssueCommit object(s) as a list for:
 -- - All the commits in the given branch, if "all" is given as the only commit.

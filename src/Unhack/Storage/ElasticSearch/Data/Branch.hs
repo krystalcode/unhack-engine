@@ -1,7 +1,8 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 
 module Unhack.Storage.ElasticSearch.Data.Branch
-       ( updateCommitsIds ) where
+       ( updateHeadCommits
+       ) where
 
 
 -- Imports.
@@ -16,6 +17,7 @@ import qualified Data.Text as T (Text)
 
 -- Internal dependencies.
 
+import qualified Unhack.Data.EmCommit                    as UDEC (EmCommit)
 import qualified Unhack.Storage.ElasticSearch.Config     as USEC (indexSettingsFromConfig, StorageConfig)
 import qualified Unhack.Storage.ElasticSearch.Operations as USEO (bulkUpdateDocuments')
 
@@ -31,12 +33,10 @@ import qualified Unhack.Storage.ElasticSearch.Operations as USEO (bulkUpdateDocu
     )
 -}
 
--- Update the 'commitsIds' field for a list of branches. Each update must be given as a tuple containing the id of the
--- branch and a list with the ids of the commits for this branch.
-updateCommitsIds :: USEC.StorageConfig -> [(T.Text, [T.Text])] -> IO (Reply)
-updateCommitsIds storageConfig branches = USEO.bulkUpdateDocuments' storageConfig indexSettings patches
+updateHeadCommits :: USEC.StorageConfig -> [(T.Text, UDEC.EmCommit)] -> IO (Reply)
+updateHeadCommits storageConfig branchesIdsWithEmCommits = USEO.bulkUpdateDocuments' storageConfig indexSettings patches
 
-    where patches       = map (\(branchId, branchCommitsIds) -> (DocId branchId, CommitsIds branchCommitsIds)) branches
+    where patches       = map (\(branchId, branchHeadCommit) -> (DocId branchId, HeadCommit branchHeadCommit)) branchesIdsWithEmCommits
           indexSettings = USEC.indexSettingsFromConfig "branch" storageConfig
 
 
@@ -44,10 +44,9 @@ updateCommitsIds storageConfig branches = USEO.bulkUpdateDocuments' storageConfi
 
 -- Patches required for the Update API.
 
--- Patch for updating the 'commitsIds' fiels
-data Patch = CommitsIds { commitsIds :: [T.Text] }
+data Patch = HeadCommit { headCommit :: UDEC.EmCommit }
              deriving (Show, Generic)
 
 instance ToJSON Patch where
-    toJSON (CommitsIds commitsIds) =
-        object [ "commitsIds" .= commitsIds ]
+    toJSON (HeadCommit headCommit) =
+        object [ "headCommit" .= headCommit ]

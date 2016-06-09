@@ -6,10 +6,15 @@ module Unhack.Pubsub.Dispatcher
 
 -- Imports.
 
+-- External dependencies.
+
 import qualified Data.ByteString.Char8 as BS (split, unpack, ByteString)
-import qualified Data.List as L (drop)
-import qualified Data.Text as T (pack)
-import qualified Unhack.Pubsub.Repository as UPR (analyseAll, analyseCommits, clone)
+import qualified Data.List             as L  (drop)
+import qualified Data.Text             as T  (pack)
+
+-- Internal dependencies.
+
+import qualified Unhack.Pubsub.Repository            as UPR  (analyseAll, analyseCommits, clone, updateHeads)
 import qualified Unhack.Storage.ElasticSearch.Config as USEC (indexSettingsFromConfig, StorageConfig, StorageIndexSettings)
 
 
@@ -65,6 +70,12 @@ dispatch config message = do
             let commitsIds   = map (T.pack . BS.unpack) $ L.drop 2 messageParts
             print $ "Dispatching message of type '" ++ action ++ "'"
             UPR.analyseCommits config (USEC.indexSettingsFromConfig "repository" config) repositoryId commitsIds
+            print $ "Action of type '" ++ action ++ "' performed"
+
+        "repositories_update_heads" -> do
+            let repositoryId = T.pack (BS.unpack $ messageParts !! 1)
+            print $ "Dispatching message of type '" ++ action ++ "'"
+            UPR.updateHeads config (USEC.indexSettingsFromConfig "repository" config) repositoryId
             print $ "Action of type '" ++ action ++ "' performed"
         _ -> error $ concat ["The pubsub message type '", action, "' is not recognised."]
 

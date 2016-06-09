@@ -3,7 +3,8 @@
 module Unhack.Pubsub.Repository
        ( analyseAll
        , analyseCommits
-       , clone ) where
+       , clone
+       , updateHeads) where
 
 
 -- Imports.
@@ -26,12 +27,13 @@ import qualified Data.Text       as T  (intercalate, pack, unpack, Text)
 import qualified Unhack.Build.Rule                            as UBR   (apply)
 import qualified Unhack.Commit                                as UDC   (emptyCommit, Commit(..))
 import qualified Unhack.Config                                as UC    (defaultConfigFile, load)
-import qualified Unhack.Data.EmBranch                         as UDEB
+import qualified Unhack.Data.EmBranch                         as UDEB  (EmBranch(..))
+import qualified Unhack.Data.EmCommit                         as UDEC  (fromCommits, EmCommit(..))
 import qualified Unhack.Data.EmIssueCommit                    as UDEIC (fromCommits, toCommits, EmIssueCommit(..))
 import qualified Unhack.Data.EmbeddedRepository               as UDER
 import qualified Unhack.Data.Repository                       as UDR
 import qualified Unhack.Git.Branch                            as UGB   (originList)
-import qualified Unhack.Git.Commit                            as UGCom (list)
+import qualified Unhack.Git.Commit                            as UGCom (getHeads, list)
 import qualified Unhack.Git.Contents                          as UGCon (commitContents)
 import qualified Unhack.Git.Fetch                             as UGF   (clone, fetch)
 import qualified Unhack.Git.Location                          as UGL   (directory)
@@ -40,8 +42,9 @@ import qualified Unhack.Issue                                 as UI    (bulkSetR
 import qualified Unhack.Parser                                as UP    (parseCommitContents)
 import qualified Unhack.Pubsub.Publish                        as UPP   (publish)
 import qualified Unhack.Storage.ElasticSearch.Config          as USEC  (indexSettingsFromConfig, StorageConfig, StorageIndexSettings)
-import qualified Unhack.Storage.ElasticSearch.Data.Repository as USEDR (get, markAccessible, markProcessed)
+import qualified Unhack.Storage.ElasticSearch.Data.Branch     as USEDB (updateHeadCommits)
 import qualified Unhack.Storage.ElasticSearch.Data.Commit     as USEDC (bulkIndex, bulkMarkProcessed, bulkUpdateBranches, mget)
+import qualified Unhack.Storage.ElasticSearch.Data.Repository as USEDR (get, markAccessible, markProcessed, updateHeadCommits)
 import qualified Unhack.Storage.ElasticSearch.Operations      as USEO  (bulkIndexDocuments', bulkIndexIssues, search', searchDefaultParams, SearchParams(..))
 
 
@@ -418,5 +421,82 @@ analyseCommits storageConfig indexSettings repositoryId commitsIds = do
 
                         True  -> return mempty
 
+-- Update the head commits for the Repository and active Branch records for the
+-- given repository.
+updateHeads :: USEC.StorageConfig -> USEC.StorageIndexSettings -> T.Text -> IO ()
+updateHeads storageConfig indexSettings repositoryId = do
+
+    -- Get the repository record.
+    maybeRepository <- USEDR.get storageConfig indexSettings repositoryId
+
+    case (isNothing maybeRepository) of
+
+        True  -> error $ "No repository found with id '" ++ (T.unpack repositoryId) ++ "'."
+
+        False -> do
+
+            let repository          = fromJust maybeRepository
+            let directory           = UGL.directory repository
+            let activeBranches      = UDR.activeBranches repository
+            let activeBranchesNames = map UDEB.name activeBranches
+
+            -- Get the heads for the active branches, filtering out any Nothing results. Nothing results should not
+            -- normally happen, but somebody could push a master branch before making a commit. In that case, there
+            -- is nothing to do.
+            maybeHeads <- UGCom.getHeads directory activeBranchesNames
+            let branchesWithMaybeHeads  = zipWith (\branch maybeHead -> (branch, maybeHead)) activeBranches maybeHeads
+            let branchesWithMaybeHeads' = filter (\(branch, maybeHead) -> isJust maybeHead) branchesWithMaybeHeads
+            let branchesWithHeads       = map (\(branch, maybeHead) -> (branch, fromJust maybeHead)) branchesWithMaybeHeads'
+
+            -- Get the commit records for the heads from Elastic Search since we need their ids and other information
+            -- that will be embedded in the branch/repository records.
+            {-
+                @Issue(
+                    "Restrict query by repository id filtering"
+                    type="improvement"
+                    priority="low"
+                    labels="performance"
+                )
+            -}
+            let hashes = map (\(branch, head) -> UDEIC.hash head) branchesWithHeads
+            let terms  = TermsQuery "hash" $ fromList hashes
+            let query  = ConstantScoreFilterQuery terms (Boost 1)
+
+            commitsResponse <- USEO.search' storageConfig (USEC.indexSettingsFromConfig "commit" storageConfig) query USEO.searchDefaultParams
+
+            let body         = responseBody commitsResponse
+            let eitherResult = eitherDecode body :: Either String (SearchResult UDC.Commit)
+            let result       = either error id eitherResult
+            let resultHits   = hits . searchHits $ result
+
+            let maybeCommitsWithIds    = map (\hit -> (hitDocId hit, hitSource hit)) resultHits
+            let justCommitsWithIds     = filter (\(commitId, commit) -> isJust commit) maybeCommitsWithIds
+            let commitsWithIds         = map (\(commitId, commit) -> (commitId, fromJust commit)) justCommitsWithIds
+            let filteredCommitsWithIds = filter (\(commitId, commit) -> repositoryId == UDC.repositoryId commit) commitsWithIds
+
+            let emCommits                  = UDEC.fromCommits filteredCommitsWithIds
+            let maybeBranchesWithEmCommits = map (findCommitByHash emCommits) branchesWithHeads
+            let justBranchesWithEmCommits  = filter (\branchWithCommit -> isJust branchWithCommit) maybeBranchesWithEmCommits
+            let branchesWithEmCommits      = map (\branchWithCommit -> fromJust branchWithCommit) justBranchesWithEmCommits
+            let branchesIdsWithEmCommits   = map (\(branch, commit) -> (UDEB._id branch, commit)) branchesWithEmCommits
+
+            updateBranchesResponse <- USEDB.updateHeadCommits storageConfig branchesIdsWithEmCommits
+
+            -- Update the head commit for the repository as well.
+            let defaultBranch = UDR.defaultBranch repository
+            let defaultBranchIdWithEmCommit = filter (\(branchId, commit) -> branchId == UDEB._id defaultBranch) branchesIdsWithEmCommits
+            let repositoryIdWithEmCommit    = [(repositoryId, snd $ defaultBranchIdWithEmCommit !! 0)]
+
+            updateRepositoryResponse <- USEDR.updateHeadCommits storageConfig repositoryIdWithEmCommit
+            print updateRepositoryResponse
+
+            return mempty
+
 
 -- Functions/types for internal use.
+
+findCommitByHash :: [UDEC.EmCommit] -> (UDEB.EmBranch, UDEIC.EmIssueCommit) -> Maybe (UDEB.EmBranch, UDEC.EmCommit)
+findCommitByHash [] _ = Nothing
+findCommitByHash (commit:xs) (branch, head)
+    | UDEC.hash commit == UDEIC.hash head = Just (branch, commit)
+    | otherwise                           = findCommitByHash xs (branch, head)
