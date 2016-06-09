@@ -41,7 +41,7 @@ import qualified Unhack.Parser                                as UP    (parseCom
 import qualified Unhack.Pubsub.Publish                        as UPP   (publish)
 import qualified Unhack.Storage.ElasticSearch.Config          as USEC  (indexSettingsFromConfig, StorageConfig, StorageIndexSettings)
 import qualified Unhack.Storage.ElasticSearch.Data.Repository as USEDR (get, markAccessible, markProcessed)
-import qualified Unhack.Storage.ElasticSearch.Data.Commit     as USEDC (bulkIndex, bulkUpdateBranches, mget)
+import qualified Unhack.Storage.ElasticSearch.Data.Commit     as USEDC (bulkIndex, bulkMarkProcessed, bulkUpdateBranches, mget)
 import qualified Unhack.Storage.ElasticSearch.Operations      as USEO  (bulkIndexDocuments', bulkIndexIssues, search', searchDefaultParams, SearchParams(..))
 
 
@@ -404,6 +404,9 @@ analyseCommits storageConfig indexSettings repositoryId commitsIds = do
                             labels="log management"
                         )
                     -}
+
+                    -- Mark as processed all commits that we parsed for issues.
+                    commitsProcessedResponse <- USEDC.bulkMarkProcessed storageConfig $ map (\(commitId, commit) -> commitId) commitsWithIds
 
                     -- Mark the repository as processed if the 'isProcessed' flag is currently set to 'false'. This
                     -- would normally be the case if this is the first time that we are processing the repository.

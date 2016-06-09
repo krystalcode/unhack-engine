@@ -2,6 +2,7 @@
 
 module Unhack.Storage.ElasticSearch.Data.Commit
        ( bulkIndex
+       , bulkMarkProcessed
        , bulkUpdateBranches
        , get
        , mget
@@ -91,6 +92,14 @@ mget storageConfig commitsIds = do
 setBuildStatus :: USEC.StorageConfig -> USEC.StorageIndexSettings -> T.Text -> UDC.Commit -> T.Text -> IO (Reply)
 setBuildStatus config indexSettings commitId commit buildStatus = USEO.updateDocument' config indexSettings updatedCommit (DocId commitId)
     where updatedCommit = commit { UDC.buildStatus = buildStatus }
+
+-- Mark multiple commits as processed.
+bulkMarkProcessed :: USEC.StorageConfig -> [T.Text] -> IO (Reply)
+bulkMarkProcessed storageConfig commitsIds = USEO.bulkUpdateDocuments' storageConfig indexSettings patches
+
+    where patches       = map (\commitId -> (DocId commitId, IsProcessed True)) commitsIds
+          indexSettings = USEC.indexSettingsFromConfig "commit" storageConfig
+
 bulkUpdateBranches :: USEC.StorageConfig -> M.Map DocId (Maybe [UDEB.EmBranch]) -> IO (Reply)
 bulkUpdateBranches storageConfig mCommitsEmBranchesWithIds = USEO.bulkUpdateDocuments' storageConfig indexSettings patches
 
@@ -102,9 +111,13 @@ bulkUpdateBranches storageConfig mCommitsEmBranchesWithIds = USEO.bulkUpdateDocu
 
 -- Patches required for the Update API.
 
-data Patch = Branches    { branches    :: Maybe [UDEB.EmBranch] }
+data Patch = IsProcessed { isProcessed :: Bool }
+           | Branches    { branches    :: Maybe [UDEB.EmBranch] }
              deriving (Show, Generic)
 
 instance ToJSON Patch where
+    toJSON (IsProcessed isProcessed) =
+        object [ "isProcessed" .= isProcessed ]
+
     toJSON (Branches branches) =
         object [ "branches" .= branches ]
