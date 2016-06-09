@@ -55,6 +55,7 @@ library
                      , bloodhound >= 0.10.0.0 && < 1
                      , bytestring >= 0.10.6.0 && < 1
                      , cmdargs >= 0.10 && < 1
+                     , containers >= 0.5.6.2 && < 1
                      , directory >= 1.2.2.0 && < 2
                      , Glob >= 0.7.5 && < 1
                      , hedis >= 0.7.6 && < 1
@@ -62,6 +63,7 @@ library
                      , process >= 1.2.3.0 && < 2
                      , random >= 1.1 && < 2
                      , regex-pcre >= 0.94.4 && < 1
+                     , semigroups >= 0.18.1 && < 1
                      , split >= 0.2.3 && < 1
                      , text >= 1.2.2.0 && < 2
                      , vector >= 0.11.0.0 && < 1
