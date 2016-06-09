@@ -102,3 +102,30 @@ getCommits' directory _ commits = do
 -- filtering.
 textToCommit' :: T.Text -> T.Text -> EmIssueCommit
 textToCommit' format commitText = textToEmIssueCommit commitText format
+
+-- Converts a git commit text, as provided by 'git log', to a tuple of values.
+-- The text needs to be in one of the following supported formats:
+-- - "hash_iso_strict": The commit's hash and time in strict ISO 8601 format
+--   separated by underscore. For example:
+--   75526bac404a78ac1d56e85fa5919d68ee15df2b_2016-01-24T05:45:00+00:00.
+-- - "hash_unix_timestamp": The commit's hash and time in unix timestamp format,
+--   separated by underscore. For example:
+--   b298cff142193c444af4bf4c4ec68f618396c059_1453917211
+textToTuples :: T.Text -> T.Text -> (T.Text, T.Text)
+
+-- 'hash_iso_strict'.
+textToTuples "hash_iso_strict" text = (hash, time)
+    where list      = T.splitOn "_" text
+          hash      = list !! 0
+          dateParts = T.splitOn "+" $ list !! 1
+          time      = T.concat [T.filter (not . (`elem` ['-', ':'])) $ dateParts !! 0, "+", dateParts !! 1]
+
+-- 'hash_unix_timestamp'.
+textToTuples "hash_unix_timestamp" text = (list !! 0, list !! 1)
+    where list = T.splitOn "_" text
+
+textToTuples commitText format = error . T.unpack $ T.concat ["The requested text format \"", format, "\" is not supported for converting text to a Commit record."]
+
+-- Convert a list of commits texts to tuples.
+textsToTuples :: T.Text -> [T.Text] -> [(T.Text, T.Text)]
+textsToTuples format texts = map (textToTuples format) texts
