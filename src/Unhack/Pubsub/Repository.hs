@@ -315,14 +315,16 @@ analyseCommits storageConfig indexSettings repositoryId commitsIds = do
         True  -> error $ "No repository found with id '" ++ (T.unpack repositoryId) ++ "'."
 
         False -> do
-            let repository = fromJust maybeRepository
-            let directory  = UGL.directory repository
+            let repository  = fromJust maybeRepository
+            let directory   = UGL.directory repository
+            let lCommitsDocIds = map (read . T.unpack :: T.Text -> DocId) commitsIds
+            let lCommitsIds    = map (\(DocId commitId) -> commitId) lCommitsDocIds
 
             -- Get the commits from Elastic Search.
-            maybeCommits <- USEDC.mget storageConfig commitsIds
+            maybeCommits <- USEDC.mget storageConfig lCommitsIds
 
             -- Zip the commits together with their ids as we will be needing them through the process.
-            let maybeCommitsWithIds = zipWith (\commitId maybeCommit -> (commitId, maybeCommit)) commitsIds maybeCommits
+            let maybeCommitsWithIds = zipWith (\commitId maybeCommit -> (commitId, maybeCommit)) lCommitsIds maybeCommits
 
             -- Filter out commits not found and unwrap them from Maybes.
             let foundMaybeCommitsWithIds = filter (\(commitId, maybeCommit) -> isJust maybeCommit) maybeCommitsWithIds
