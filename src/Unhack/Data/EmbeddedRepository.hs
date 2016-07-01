@@ -31,11 +31,11 @@ emptyEmbeddedRepository = EmbeddedRepository
 
 instance FromJSON EmbeddedRepository where
     parseJSON (Object v) = EmbeddedRepository <$>
-                           v .: "id" <*>
+                           v .: "_id" <*>
                            v .: "url"
     parseJSON invalid    = typeMismatch "EmbeddedRepository" invalid
 
 instance ToJSON EmbeddedRepository where
     toJSON (EmbeddedRepository _id url) =
-        object [ "id" .= _id
+        object [ "_id" .= _id
                , "url" .= url ]

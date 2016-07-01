@@ -365,7 +365,7 @@ instance ToJSON IssueMapping where
             .= object [ "properties"
                 .= object [ "repository" .= object [ "type" .= ("nested" :: T.Text)
                                                    , "properties"
-                                                       .= object [ "id"  .= object [ "type"  .= ("string"       :: T.Text)
+                                                       .= object [ "_id" .= object [ "type"  .= ("string"       :: T.Text)
                                                                                    , "index" .= ("not_analyzed" :: T.Text) ]
                                                                  , "url" .= object [ "type"  .= ("string"       :: T.Text)
                                                                                    , "index" .= ("not_analyzed" :: T.Text) ]]]
