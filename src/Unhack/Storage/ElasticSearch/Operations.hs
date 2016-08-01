@@ -268,8 +268,16 @@ instance ToJSON RepositoryMapping where
                                                        , "index" .= ("not_analyzed" :: T.Text) ]
                           , "isPrivate"      .= object [ "type"  .= ("boolean"      :: T.Text)
                                                        , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "isQueuedToBeDeleted" .= object [ "type"  .= ("boolean"      :: T.Text)
+                                                       , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "language"       .= object [ "type"  .= ("string"       :: T.Text)
+                                                       , "index" .= ("not_analyzed" :: T.Text) ]
                           , "name"           .= object [ "type"  .= ("string"       :: T.Text)
                                                        , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "ownerEntityType" .= object [ "type"  .= ("string"       :: T.Text)
+                                                        , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "ownerEntityId"   .= object [ "type"  .= ("string"       :: T.Text)
+                                                        , "index" .= ("not_analyzed" :: T.Text) ]
                           , "picture"        .= object [ "type"  .= ("string"       :: T.Text)
                                                        , "index" .= ("not_analyzed" :: T.Text) ]
                           , "previousUrls"   .= object [ "type"  .= ("string"       :: T.Text)

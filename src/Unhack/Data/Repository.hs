@@ -1,8 +1,7 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 
 module Unhack.Data.Repository
-       ( emptyRepository
-       , Repository(..)
+       ( Repository(..)
        ) where
 
 
@@ -11,12 +10,15 @@ module Unhack.Data.Repository
 -- External dependencies.
 
 import Data.Aeson
-import Data.Aeson.Types (typeMismatch)
-import GHC.Generics     (Generic)
+import Data.Aeson.Types          (typeMismatch)
+import Database.Bloodhound.Types (DocId)
+import GHC.Generics              (Generic)
 
 import qualified Data.Text as T (Text)
 
 -- Internal dependences.
+
+import Unhack.Types (EntityType)
 
 import Unhack.Data.EmBranch (emptyEmBranch, EmBranch)
 import Unhack.Data.EmCommit (emptyEmCommit, EmCommit)
@@ -32,60 +34,49 @@ import Unhack.Data.EmCommit (emptyEmCommit, EmCommit)
   )
 -}
 data Repository = Repository
-    { activeBranches :: [EmBranch]
-    , defaultBranch  :: EmBranch
-    , headCommit     :: Maybe EmCommit
-    , isAccessible   :: Bool
-    , isActive       :: Bool
-    , isDeleted      :: Bool
-    , isProcessed    :: Bool
-    , isPrivate      :: Bool
-    , name           :: T.Text
-    , picture        :: T.Text
-    , previousUrls   :: [T.Text]
-    , _type          :: T.Text
-    , url            :: T.Text
-    , vendor         :: T.Text
-    , vendorId       :: T.Text
-    , vendorName     :: T.Text
-    , vendorUsername :: T.Text
+    { activeBranches      :: [EmBranch]
+    , defaultBranch       :: Maybe EmBranch
+    , headCommit          :: Maybe EmCommit
+    , isAccessible        :: Bool
+    , isActive            :: Bool
+    , isDeleted           :: Bool
+    , isProcessed         :: Bool
+    , isPrivate           :: Bool
+    , isQueuedToBeDeleted :: Maybe Bool
+    , language            :: Maybe T.Text
+    , name                :: T.Text
+    , ownerEntityType     :: EntityType
+    , ownerEntityId       :: DocId
+    , picture             :: Maybe T.Text
+    , previousUrls        :: Maybe [T.Text]
+    , _type               :: T.Text
+    , url                 :: T.Text
+    , vendor              :: T.Text
+    , vendorId            :: T.Text
+    , vendorName          :: T.Text
+    , vendorUsername      :: T.Text
     } deriving (Generic, Show)
-
-emptyRepository = Repository
-    { activeBranches = []
-    , defaultBranch  = emptyEmBranch
-    , headCommit     = Nothing
-    , isAccessible   = False
-    , isActive       = True
-    , isDeleted      = False
-    , isProcessed    = False
-    , isPrivate      = True
-    , name           = ""
-    , picture        = ""
-    , previousUrls   = []
-    , _type          = ""
-    , url            = ""
-    , vendor         = ""
-    , vendorId       = ""
-    , vendorName     = ""
-    , vendorUsername = "" }
 
 
 -- Functions/types for internal use.
 
 instance FromJSON Repository where
     parseJSON (Object v) =
-        Repository <$> v .:? "activeBranches" .!= []
-                   <*> v .:? "defaultBranch"  .!= emptyEmBranch
-                   <*> v .:? "headCommit"     .!= Nothing
+        Repository <$> v .:? "activeBranches"      .!= []
+                   <*> v .:? "defaultBranch"       .!= Nothing
+                   <*> v .:? "headCommit"          .!= Nothing
                    <*> v .:  "isAccessible"
                    <*> v .:  "isActive"
                    <*> v .:  "isDeleted"
                    <*> v .:  "isProcessed"
                    <*> v .:  "isPrivate"
+                   <*> v .:  "isQueuedToBeDeleted" .!= Nothing
+                   <*> v .:  "language"            .!= Nothing
                    <*> v .:  "name"
-                   <*> v .:? "picture"        .!= ""
-                   <*> v .:? "previousUrls"   .!= []
+                   <*> v .:  "ownerEntityType"
+                   <*> v .:  "ownerEntityId"
+                   <*> v .:? "picture"             .!= Nothing
+                   <*> v .:? "previousUrls"        .!= Nothing
                    <*> v .:  "type"
                    <*> v .:  "url"
                    <*> v .:  "vendor"
@@ -95,21 +86,46 @@ instance FromJSON Repository where
     parseJSON invalid    = typeMismatch "Repository" invalid
 
 instance ToJSON Repository where
-    toJSON (Repository activeBranches defaultBranch headCommit isAccessible isActive isDeleted isProcessed isPrivate name picture previousUrls _type url vendor vendorId vendorName vendorUsername) =
-        object [ "activeBranches" .= activeBranches
-               , "defaultBranch"  .= defaultBranch
-               , "headCommit"     .= headCommit
-               , "isAccessible"   .= isAccessible
-               , "isActive"       .= isActive
-               , "isDeleted"      .= isDeleted
-               , "isProcessed"    .= isProcessed
-               , "isPrivate"      .= isPrivate
-               , "name"           .= name
-               , "picture"        .= picture
-               , "previousUrls"   .= previousUrls
-               , "type"           .= _type
-               , "url"            .= url
-               , "vendor"         .= vendor
-               , "vendorId"       .= vendorId
-               , "vendorName"     .= vendorName
-               , "vendorUsername" .= vendorUsername ]
+    toJSON (Repository activeBranches
+                       defaultBranch
+                       headCommit
+                       isAccessible
+                       isActive
+                       isDeleted
+                       isProcessed
+                       isPrivate
+                       isQueuedToBeDeleted
+                       language
+                       name
+                       ownerEntityType
+                       ownerEntityId
+                       picture
+                       previousUrls
+                       _type
+                       url
+                       vendor
+                       vendorId
+                       vendorName
+                       vendorUsername
+           ) =
+        object [ "activeBranches"      .= activeBranches
+               , "defaultBranch"       .= defaultBranch
+               , "headCommit"          .= headCommit
+               , "isAccessible"        .= isAccessible
+               , "isActive"            .= isActive
+               , "isDeleted"           .= isDeleted
+               , "isProcessed"         .= isProcessed
+               , "isPrivate"           .= isPrivate
+               , "isQueuedToBeDeleted" .= isQueuedToBeDeleted
+               , "language"            .= language
+               , "name"                .= name
+               , "ownerEntityType"     .= ownerEntityType
+               , "ownerEntityId"       .= ownerEntityId
+               , "picture"             .= picture
+               , "previousUrls"        .= previousUrls
+               , "type"                .= _type
+               , "url"                 .= url
+               , "vendor"              .= vendor
+               , "vendorId"            .= vendorId
+               , "vendorName"          .= vendorName
+               , "vendorUsername"      .= vendorUsername ]

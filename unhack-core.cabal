@@ -48,6 +48,7 @@ library
                      , Unhack.Storage.ElasticSearch.Data.Commit
                      , Unhack.Storage.ElasticSearch.Data.Repository
                      , Unhack.Storage.ElasticSearch.Operations
+                     , Unhack.Types
   build-depends:       aeson >= 0.10.0.0 && < 1
                      , attoparsec >= 0.13.0.1 && < 1
                      , base >= 4.7 && < 5
