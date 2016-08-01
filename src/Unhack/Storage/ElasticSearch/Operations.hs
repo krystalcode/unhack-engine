@@ -40,6 +40,8 @@ import qualified Data.Text as T (concat, pack, Text)
 
 -- Internal dependencies.
 
+import Unhack.Storage.ElasticSearch.Mappings.Project
+
 import qualified Unhack.Issue                        as UDI (Issue)
 import qualified Unhack.Storage.ElasticSearch.Config as USC
 
@@ -88,6 +90,7 @@ putMapping' config settings@(USC.StorageIndexSettings key _ _ _)
     | key == "branch"     = withBH'' $ putMapping (indexName settings) branchMapping BranchMapping
     | key == "commit"     = withBH'' $ putMapping (indexName settings) commitMapping CommitMapping
     | key == "issue"      = withBH'' $ putMapping (indexName settings) issueMapping IssueMapping
+    | key == "project"    = withBH'' $ putMapping (indexName settings) projectMapping ProjectMapping
     where withBH'' = withBH' config
 
 deleteAllMappings :: USC.StorageConfig -> IO ([Reply])
@@ -102,6 +105,7 @@ deleteMapping' config settings@(USC.StorageIndexSettings key _ _ _)
     | key == "branch"     = withBH'' $ deleteMapping'' branchMapping
     | key == "commit"     = withBH'' $ deleteMapping'' commitMapping
     | key == "issue"      = withBH'' $ deleteMapping'' issueMapping
+    | key == "project"    = withBH'' $ deleteMapping'' projectMapping
     where withBH''        = withBH' config
           deleteMapping'' = deleteMapping (indexName settings)
 
@@ -111,6 +115,7 @@ getDocument' config settings@(USC.StorageIndexSettings key _ _ _) docId
     | key == "branch"     = withBH'' $ getDocument'' branchMapping docId
     | key == "commit"     = withBH'' $ getDocument'' commitMapping docId
     | key == "issue"      = withBH'' $ getDocument'' issueMapping docId
+    | key == "project"    = withBH'' $ getDocument'' projectMapping docId
     where withBH''        = withBH' config
           getDocument'' = getDocument (indexName settings)
 
@@ -145,6 +150,7 @@ indexDocument' config settings@(USC.StorageIndexSettings key _ _ _) document
     | key == "branch"     = withBH'' $ indexDocument'' branchMapping defaultIndexDocumentSettings document
     | key == "commit"     = withBH'' $ indexDocument'' commitMapping defaultIndexDocumentSettings document
     | key == "issue"      = withBH'' $ indexDocument'' issueMapping defaultIndexDocumentSettings document
+    | key == "project"    = withBH'' $ indexDocument'' projectMapping defaultIndexDocumentSettings document
     where withBH''        = withBH' config
           indexDocument'' = indexDocumentAutoID (indexName settings)
 
@@ -162,6 +168,7 @@ updateDocument' config settings@(USC.StorageIndexSettings key _ _ _) document id
     | key == "branch"     = withBH'' $ updateDocument'' branchMapping defaultIndexDocumentSettings document id
     | key == "commit"     = withBH'' $ updateDocument'' commitMapping defaultIndexDocumentSettings document id
     | key == "issue"      = withBH'' $ updateDocument'' issueMapping defaultIndexDocumentSettings document id
+    | key == "project"    = withBH'' $ updateDocument'' projectMapping defaultIndexDocumentSettings document id
     where withBH''        = withBH' config
           updateDocument'' = indexDocument (indexName settings)
 
@@ -182,6 +189,7 @@ bulkUpdateDocuments' config settings@(USC.StorageIndexSettings key _ _ _) patche
                                         "branch"     -> branchMapping
                                         "commit"     -> commitMapping
                                         "issue"      -> issueMapping
+                                        "project"    -> projectMapping
 
 {-
     @Issue(
