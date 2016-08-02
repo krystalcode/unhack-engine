@@ -4,7 +4,6 @@ module Unhack.Data.EmIssueCommit
        ( emptyEmIssueCommit
        , textToEmIssueCommit
        , fromCommits
-       , toCommits
        , EmIssueCommit(..)
        ) where
 
@@ -40,9 +39,6 @@ emptyEmIssueCommit = EmIssueCommit
 fromCommits :: [(T.Text, UC.Commit)] -> [EmIssueCommit]
 fromCommits commits = map fromCommit commits
 
-toCommits :: T.Text -> [EmIssueCommit] -> [UC.Commit]
-toCommits repositoryId emCommits = toCommits' emCommits repositoryId
-
 -- Converts text to a Commit record.
 -- The text needs to be in one of the following supported formats:
 -- - "hash_iso_strict": The commit's hash and time in strict ISO 8601 format
@@ -72,12 +68,6 @@ fromCommit :: (T.Text, UC.Commit) -> EmIssueCommit
 fromCommit (commitId, commit) = EmIssueCommit { _id  = commitId
                                               , hash = UC.hash commit
                                               , time = UC.time commit }
-
-toCommits' :: [EmIssueCommit] -> T.Text -> [UC.Commit]
-toCommits' emCommits repositoryId = map mapCommit emCommits
-    where mapCommit emCommit = UC.emptyCommit { UC.repositoryId = repositoryId
-                                              , UC.hash         = hash emCommit
-                                              , UC.time         = time emCommit }
 
 instance FromJSON EmIssueCommit where
     parseJSON (Object v) = EmIssueCommit

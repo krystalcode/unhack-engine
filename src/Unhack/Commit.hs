@@ -2,7 +2,7 @@
 
 module Unhack.Commit
        ( bulkSetRepositoryId
-       , emptyCommit
+       , makeCommit
        , Commit(..)
        ) where
 
@@ -13,6 +13,7 @@ module Unhack.Commit
 
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)
+import Data.Time        (UTCTime)
 import GHC.Generics     (Generic)
 
 import qualified Data.Text as T (Text)
@@ -24,22 +25,32 @@ import qualified Unhack.Data.EmBranch as UDEB (EmBranch)
 
 -- Public API.
 
-data Commit = Commit { repositoryId :: T.Text
-                     , hash         :: T.Text
-                     , time         :: T.Text
-                     , branches     :: Maybe [UDEB.EmBranch]
-                     , buildStatus  :: T.Text
+data Commit = Commit { branches     :: Maybe [UDEB.EmBranch]
                      , buildMessage :: T.Text
-                     , isProcessed    :: Bool
+                     , buildStatus  :: T.Text
+                     , createdAt    :: UTCTime
+                     , hash         :: T.Text
+                     , isProcessed  :: Bool
+                     , repositoryId :: T.Text
+                     , time         :: T.Text
+                     , updatedAt    :: UTCTime
                      } deriving (Generic, Show)
 
-emptyCommit = Commit { repositoryId = ""
-                     , hash         = ""
-                     , time         = ""
-                     , branches     = Nothing
-                     , buildStatus  = ""
-                     , buildMessage = ""
-                     , isProcessed  = False }
+-- Helper function for creating a Commit record by providing only the most
+-- essential fields.
+makeCommit :: Maybe [UDEB.EmBranch] -> T.Text -> T.Text -> T.Text -> UTCTime -> Commit
+makeCommit branches hash repositoryId time now
+    = Commit
+        { branches     = branches
+        , buildMessage = ""
+        , buildStatus  = ""
+        , createdAt    = now
+        , hash         = hash
+        , isProcessed  = False
+        , repositoryId = repositoryId
+        , time         = time
+        , updatedAt    = now
+        }
 
 bulkSetRepositoryId :: [Commit] -> T.Text -> [Commit]
 bulkSetRepositoryId commits repositoryId = map (\commit -> commit { repositoryId = repositoryId }) commits
@@ -49,21 +60,26 @@ bulkSetRepositoryId commits repositoryId = map (\commit -> commit { repositoryId
 
 instance FromJSON Commit where
     parseJSON (Object v) = Commit
-                           <$> v .:  "repositoryId"
-                           <*> v .:  "hash"
-                           <*> v .:  "time"
-                           <*> v .:? "branches"     .!= Nothing
-                           <*> v .:  "buildStatus"
+                           <$> v .:? "branches"     .!= Nothing
                            <*> v .:  "buildMessage"
+                           <*> v .:  "buildStatus"
+                           <*> v .:  "createdAt"
+                           <*> v .:  "hash"
                            <*> v .:  "isProcessed"
+                           <*> v .:  "repositoryId"
+                           <*> v .:  "time"
+                           <*> v .:  "updatedAt"
     parseJSON invalid    = typeMismatch "Commit" invalid
 
 instance ToJSON Commit where
-    toJSON (Commit repositoryId hash time branches buildStatus buildMessage isProcessed) =
-        object [ "repositoryId" .= repositoryId
-               , "hash"         .= hash
-               , "time"         .= time
-               , "branches"     .= branches
-               , "buildStatus"  .= buildStatus
+    toJSON (Commit branches buildMessage buildStatus createdAt hash isProcessed repositoryId time updatedAt) =
+        object [ "branches"     .= branches
                , "buildMessage" .= buildMessage
-               , "isProcessed"  .= isProcessed ]
+               , "buildStatus"  .= buildStatus
+               , "createdAt"    .= createdAt
+               , "hash"         .= hash
+               , "isProcessed"  .= isProcessed
+               , "repositoryId" .= repositoryId
+               , "time"         .= time
+               , "updatedAt"    .= updatedAt
+               ]
