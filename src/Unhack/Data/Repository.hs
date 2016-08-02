@@ -12,6 +12,7 @@ module Unhack.Data.Repository
 import Data.Aeson
 import Data.Aeson.Types          (typeMismatch)
 import Database.Bloodhound.Types (DocId)
+import Data.Time                 (UTCTime)
 import GHC.Generics              (Generic)
 
 import qualified Data.Text as T (Text)
@@ -35,21 +36,23 @@ import Unhack.Data.EmCommit (emptyEmCommit, EmCommit)
 -}
 data Repository = Repository
     { activeBranches      :: [EmBranch]
+    , createdAt           :: UTCTime
     , defaultBranch       :: Maybe EmBranch
     , headCommit          :: Maybe EmCommit
     , isAccessible        :: Bool
     , isActive            :: Bool
     , isDeleted           :: Bool
-    , isProcessed         :: Bool
     , isPrivate           :: Bool
+    , isProcessed         :: Bool
     , isQueuedToBeDeleted :: Maybe Bool
     , language            :: Maybe T.Text
     , name                :: T.Text
-    , ownerEntityType     :: EntityType
     , ownerEntityId       :: DocId
+    , ownerEntityType     :: EntityType
     , picture             :: Maybe T.Text
     , previousUrls        :: Maybe [T.Text]
     , _type               :: T.Text
+    , updatedAt           :: UTCTime
     , url                 :: T.Text
     , vendor              :: T.Text
     , vendorId            :: T.Text
@@ -63,21 +66,23 @@ data Repository = Repository
 instance FromJSON Repository where
     parseJSON (Object v) =
         Repository <$> v .:? "activeBranches"      .!= []
+                   <*> v .:  "createdAt"
                    <*> v .:? "defaultBranch"       .!= Nothing
                    <*> v .:? "headCommit"          .!= Nothing
                    <*> v .:  "isAccessible"
                    <*> v .:  "isActive"
                    <*> v .:  "isDeleted"
-                   <*> v .:  "isProcessed"
                    <*> v .:  "isPrivate"
-                   <*> v .:  "isQueuedToBeDeleted" .!= Nothing
-                   <*> v .:  "language"            .!= Nothing
+                   <*> v .:  "isProcessed"
+                   <*> v .:? "isQueuedToBeDeleted" .!= Nothing
+                   <*> v .:? "language"            .!= Nothing
                    <*> v .:  "name"
-                   <*> v .:  "ownerEntityType"
                    <*> v .:  "ownerEntityId"
+                   <*> v .:  "ownerEntityType"
                    <*> v .:? "picture"             .!= Nothing
                    <*> v .:? "previousUrls"        .!= Nothing
                    <*> v .:  "type"
+                   <*> v .:  "updatedAt"
                    <*> v .:  "url"
                    <*> v .:  "vendor"
                    <*> v .:  "vendorId"
@@ -87,21 +92,23 @@ instance FromJSON Repository where
 
 instance ToJSON Repository where
     toJSON (Repository activeBranches
+                       createdAt
                        defaultBranch
                        headCommit
                        isAccessible
                        isActive
                        isDeleted
-                       isProcessed
                        isPrivate
+                       isProcessed
                        isQueuedToBeDeleted
                        language
                        name
-                       ownerEntityType
                        ownerEntityId
+                       ownerEntityType
                        picture
                        previousUrls
                        _type
+                       updatedAt
                        url
                        vendor
                        vendorId
@@ -109,21 +116,23 @@ instance ToJSON Repository where
                        vendorUsername
            ) =
         object [ "activeBranches"      .= activeBranches
+               , "createdAt"           .= createdAt
                , "defaultBranch"       .= defaultBranch
                , "headCommit"          .= headCommit
                , "isAccessible"        .= isAccessible
                , "isActive"            .= isActive
                , "isDeleted"           .= isDeleted
-               , "isProcessed"         .= isProcessed
                , "isPrivate"           .= isPrivate
+               , "isProcessed"         .= isProcessed
                , "isQueuedToBeDeleted" .= isQueuedToBeDeleted
                , "language"            .= language
                , "name"                .= name
-               , "ownerEntityType"     .= ownerEntityType
                , "ownerEntityId"       .= ownerEntityId
+               , "ownerEntityType"     .= ownerEntityType
                , "picture"             .= picture
                , "previousUrls"        .= previousUrls
                , "type"                .= _type
+               , "updatedAt"           .= updatedAt
                , "url"                 .= url
                , "vendor"              .= vendor
                , "vendorId"            .= vendorId
