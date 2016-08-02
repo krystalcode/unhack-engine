@@ -38,7 +38,7 @@ bulkUpdateRepositories :: USEC.StorageConfig -> M.Map DocId (Maybe [UDEPR.EmProj
 bulkUpdateRepositories storageConfig mEmRepositoriesWithProjectsIds = USEO.bulkUpdateDocuments' storageConfig indexSettings patches
 
     where patches       = M.toList $ M.map (\emRepositories -> Repositories (UDP.combineBuilds emRepositories) emRepositories) mEmRepositoriesWithProjectsIds
-          indexSettings = projctIndexSettings storageConfig
+          indexSettings = projectIndexSettings storageConfig
 
 -- Get a project record given its ID.
 get :: USEC.StorageConfig -> DocId -> IO (Maybe UDP.Project)
