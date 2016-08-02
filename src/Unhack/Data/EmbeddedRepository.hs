@@ -18,13 +18,13 @@ import qualified Data.Text as T (Text)
 -- Public API.
 
 data EmbeddedRepository = EmbeddedRepository
-    { _id :: T.Text
-    , url :: T.Text } deriving (Generic, Show)
+    { _id  :: T.Text
+    , name :: T.Text } deriving (Generic, Show)
 
 emptyEmbeddedRepository :: EmbeddedRepository
 emptyEmbeddedRepository = EmbeddedRepository
-    { _id = ""
-    , url = "" }
+    { _id  = ""
+    , name = "" }
 
 
 -- Functions/types for internal use.
@@ -32,10 +32,10 @@ emptyEmbeddedRepository = EmbeddedRepository
 instance FromJSON EmbeddedRepository where
     parseJSON (Object v) = EmbeddedRepository <$>
                            v .: "_id" <*>
-                           v .: "url"
+                           v .: "name"
     parseJSON invalid    = typeMismatch "EmbeddedRepository" invalid
 
 instance ToJSON EmbeddedRepository where
-    toJSON (EmbeddedRepository _id url) =
-        object [ "_id" .= _id
-               , "url" .= url ]
+    toJSON (EmbeddedRepository _id name) =
+        object [ "_id"  .= _id
+               , "name" .= name ]

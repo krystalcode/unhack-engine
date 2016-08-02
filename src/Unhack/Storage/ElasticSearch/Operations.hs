@@ -402,10 +402,10 @@ instance ToJSON IssueMapping where
             .= object [ "properties"
                 .= object [ "repository" .= object [ "type" .= ("nested" :: T.Text)
                                                    , "properties"
-                                                       .= object [ "_id" .= object [ "type"  .= ("string"       :: T.Text)
-                                                                                   , "index" .= ("not_analyzed" :: T.Text) ]
-                                                                 , "url" .= object [ "type"  .= ("string"       :: T.Text)
-                                                                                   , "index" .= ("not_analyzed" :: T.Text) ]]]
+                                                       .= object [ "_id"  .= object [ "type"  .= ("string"       :: T.Text)
+                                                                                    , "index" .= ("not_analyzed" :: T.Text) ]
+                                                                 , "name" .= object [ "type"  .= ("string"       :: T.Text)
+                                                                                    , "index" .= ("not_analyzed" :: T.Text) ]]]
                           , "commit"     .= object [ "type" .= ("nested" :: T.Text)
                                                    , "properties"
                                                        .= object [ "_id"  .= object [ "type"   .= ("string"       :: T.Text)
