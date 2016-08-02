@@ -347,6 +347,14 @@ commitMapping = MappingName "commit"
 
 data CommitMapping = CommitMapping deriving (Eq, Show)
 
+{-
+    @Issue(
+        "Use ISO datetime instead of unix timestamp in commit's time"
+        type="improvement"
+        priority="normal"
+        labels="release, v1.0.0-beta1"
+    )
+-}
 instance ToJSON CommitMapping where
     toJSON CommitMapping
         = object [ "commit"
