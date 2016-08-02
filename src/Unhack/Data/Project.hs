@@ -14,6 +14,7 @@ module Unhack.Data.Project
 
 import Data.Aeson
 import Data.Aeson.Types          (typeMismatch)
+import Data.Time                 (UTCTime)
 import Database.Bloodhound.Types (DocId)
 import Data.Maybe                (fromJust, isJust)
 import GHC.Generics              (Generic)
@@ -32,16 +33,18 @@ import qualified Unhack.Data.EmProjectRepository as UDEPR (EmProjectRepository(.
 
 data Project = Project
     { build           :: Maybe Build
+    , createdAt       :: UTCTime
     , isDeleted       :: Bool
     , name            :: T.Text
-    , ownerEntityType :: EntityType
     , ownerEntityId   :: DocId
+    , ownerEntityType :: EntityType
     , repositories    :: Maybe [UDEPR.EmProjectRepository]
+    , updatedAt           :: UTCTime
     } deriving (Generic, Show)
 
 data Build = Build
-    { status  :: T.Text
-    , message :: Maybe T.Text
+    { message :: Maybe T.Text
+    , status  :: T.Text
     } deriving (Generic, Show)
 
 -- Update the build status of the project according to the build status of its repositories.
@@ -73,41 +76,58 @@ combineBuilds maybeRepositories
 instance FromJSON Project where
     parseJSON (Object v) =
            Project <$> v .:? "build"           .!= Nothing
+                   <*> v .:  "createdAt"
                    <*> v .:  "isDeleted"
                    <*> v .:  "name"
-                   <*> v .:  "ownerEntityType"
                    <*> v .:  "ownerEntityId"
+                   <*> v .:  "ownerEntityType"
                    <*> v .:? "repositories"    .!= Nothing
+                   <*> v .:  "updatedAt"
     parseJSON invalid    = typeMismatch "Project" invalid
 
 instance ToJSON Project where
-    toJSON (Project build isDeleted name ownerEntityType ownerEntityId repositories) =
-        object [ "build    "       .= build
+    toJSON (Project build
+                    createdAt
+                    isDeleted
+                    name
+                    ownerEntityId
+                    ownerEntityType
+                    repositories
+                    updatedAt
+           ) =
+        object [ "build"           .= build
+               , "createdAt"       .= createdAt
                , "isDeleted"       .= isDeleted
                , "name"            .= name
-               , "ownerEntityType" .= ownerEntityType
                , "ownerEntityId"   .= ownerEntityId
-               , "repositories"    .= repositories ]
+               , "ownerEntityType" .= ownerEntityType
+               , "repositories"    .= repositories
+               , "updatedAt"       .= updatedAt
+               ]
 
 instance FromJSON Build where
     parseJSON (Object v) =
-             Build <$> v .:  "status"
-                   <*> v .:? "message" .!= Nothing
+             Build <$> v .:? "message" .!= Nothing
+                   <*> v .:  "status"
     parseJSON invalid    = typeMismatch "Build" invalid
 
 instance ToJSON Build where
-    toJSON (Build status message) =
-        object [ "status"  .= status
-               , "message" .= message ]
+    toJSON (Build message status) =
+        object [ "message" .= message
+               , "status"  .= status
+               ]
 
 passingBuild = Build
-    { status  = "passing"
-    , message = Nothing   }
+    { message = Nothing
+    , status  = "passing"
+    }
 
 warningBuild = Build
-    { status  = "warning"
-    , message = Nothing   }
+    { message = Nothing
+    , status  = "warning"
+    }
 
 failingBuild = Build
-    { status  = "failing"
-    , message = Nothing   }
+    { message = Nothing
+    , status  = "failing"
+    }

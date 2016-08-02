@@ -38,6 +38,10 @@ instance ToJSON ProjectMapping where
                             [ "type"  .= ("string"       :: T.Text)
                             , "index" .= ("not_analyzed" :: T.Text) ]]] -- End of 'build' field.
 
+                , "createdAt" .= object
+                    [ "type"   .= ("date"        :: T.Text)
+                    , "format" .= ("date_time"   :: T.Text) ] -- End of 'createdAt' field.
+
                 , "isDeleted" .= object
                     [ "type"  .= ("boolean"      :: T.Text)
                     , "index" .= ("not_analyzed" :: T.Text) ] -- End of 'isDeleted' field.
@@ -96,5 +100,9 @@ instance ToJSON ProjectMapping where
                                     , "index"  .= ("not_analyzed" :: T.Text) ]]] -- End of 'repositories.headCommit' field.
 
                         ]] -- End of 'repositories' field.
+
+                , "updatedAt" .= object
+                    [ "type"   .= ("date"         :: T.Text)
+                    , "format" .= ("date_time"   :: T.Text) ] -- End of 'updatedAt' field.
 
                 ]]]
