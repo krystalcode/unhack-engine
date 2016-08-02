@@ -248,6 +248,8 @@ instance ToJSON RepositoryMapping where
                                                                                                  , "index"  .= ("not_analyzed" :: T.Text) ]
                                                                       , "name"         .= object [ "type"   .= ("string"       :: T.Text)
                                                                                                  , "index"  .= ("not_analyzed" :: T.Text) ]]]
+                          , "createdAt"       .= object [ "type"  .= ("date"         :: T.Text)
+                                                       , "format" .= ("date_time"   :: T.Text) ]
                           , "defaultBranch"   .= object [ "type"  .= ("nested"         :: T.Text)
                                                         , "properties"
                                                             .= object [ "_id"          .= object [ "type"   .= ("string"       :: T.Text)
@@ -292,6 +294,8 @@ instance ToJSON RepositoryMapping where
                                                        , "index" .= ("not_analyzed" :: T.Text) ]
                           , "type"           .= object [ "type"  .= ("string"       :: T.Text)
                                                        , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "updatedAt"      .= object [ "type"  .= ("date"         :: T.Text)
+                                                       , "format" .= ("date_time"   :: T.Text) ]
                           , "url"            .= object [ "type"  .= ("string"       :: T.Text)
                                                        , "index" .= ("not_analyzed" :: T.Text) ]
                           , "vendor"         .= object [ "type"  .= ("string"       :: T.Text)
@@ -313,7 +317,9 @@ instance ToJSON BranchMapping where
     toJSON BranchMapping
         = object [ "branch"
             .= object [ "properties"
-                .= object [ "headCommit"   .= object [ "type"  .= ("nested"       :: T.Text)
+                .= object [ "createdAt"    .= object [ "type"  .= ("date"         :: T.Text)
+                                                     , "format" .= ("date_time"   :: T.Text) ]
+                          , "headCommit"   .= object [ "type"  .= ("nested"       :: T.Text)
                                                      , "properties"
                                                          .= object [ "_id"          .= object [ "type"   .= ("string"       :: T.Text)
                                                                                               , "index"  .= ("not_analyzed" :: T.Text) ]
@@ -330,7 +336,9 @@ instance ToJSON BranchMapping where
                           , "name"         .= object [ "type"  .= ("string"       :: T.Text)
                                                      , "index" .= ("not_analyzed" :: T.Text) ]
                           , "repositoryId" .= object [ "type"  .= ("string"       :: T.Text)
-                                                     , "index" .= ("not_analyzed" :: T.Text) ] ]]]
+                                                     , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "updatedAt"    .= object [ "type"  .= ("date"         :: T.Text)
+                                                     , "format" .= ("date_time"   :: T.Text) ] ]]]
 
 
 -- Mapping for the "commit" document type.
@@ -352,6 +360,8 @@ instance ToJSON CommitMapping where
                                                      , "index"  .= ("not_analyzed" :: T.Text) ]
                           , "buildMessage" .= object [ "type"   .= ("string"       :: T.Text)
                                                      , "index"  .= ("not_analyzed" :: T.Text) ]
+                          , "createdAt"    .= object [ "type"   .= ("date"         :: T.Text)
+                                                     , "format" .= ("date_time"    :: T.Text) ]
                           , "isProcessed"  .= object [ "type"   .= ("boolean"      :: T.Text)
                                                      , "index"  .= ("not_analyzed" :: T.Text) ]
                           , "hash"         .= object [ "type"   .= ("string"       :: T.Text)
@@ -359,7 +369,9 @@ instance ToJSON CommitMapping where
                           , "repositoryId" .= object [ "type"   .= ("string"       :: T.Text)
                                                      , "index"  .= ("not_analyzed" :: T.Text) ]
                           , "time"         .= object [ "type"   .= ("date"         :: T.Text)
-                                                     , "format" .= ("epoch_second" :: T.Text) ] ]]]
+                                                     , "format" .= ("epoch_second" :: T.Text) ]
+                          , "updatedAt"    .= object [ "type"   .= ("date"         :: T.Text)
+                                                     , "format" .= ("date_time"    :: T.Text) ] ]]]
 
 
 -- Mapping for the "issue" document type.
@@ -393,6 +405,8 @@ instance ToJSON IssueMapping where
                                                                                     , "index"  .= ("not_analyzed" :: T.Text) ]
                                                                  , "time" .= object [ "type"   .= ("date"         :: T.Text)
                                                                                     , "format" .= ("epoch_second" :: T.Text) ]]]
+                          , "createdAt"  .= object [ "type"   .= ("date"         :: T.Text)
+                                                   , "format" .= ("date_time"    :: T.Text) ]
                           , "file"       .= object [ "type"  .= ("string"       :: T.Text)
                                                    , "index" .= ("not_analyzed" :: T.Text) ]
                           , "title"      .= object [ "type"  .= ("string"       :: T.Text)
@@ -402,4 +416,7 @@ instance ToJSON IssueMapping where
                           , "priority"   .= object [ "type"  .= ("string"       :: T.Text)
                                                    , "index" .= ("not_analyzed" :: T.Text) ]
                           , "labels"     .= object [ "type"  .= ("string"       :: T.Text)
-                                                   , "index" .= ("not_analyzed" :: T.Text) ] ]]]
+                                                   , "index" .= ("not_analyzed" :: T.Text) ]
+                          , "updatedAt"  .= object [ "type"   .= ("date"         :: T.Text)
+                                                   , "format" .= ("date_time"    :: T.Text) ] ]]]
+
