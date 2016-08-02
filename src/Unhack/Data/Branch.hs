@@ -1,8 +1,7 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 
 module Unhack.Data.Branch
-       ( emptyBranch
-       , bulkSetRepositoryId
+       ( bulkSetRepositoryId
        , Branch(..)
        ) where
 
@@ -13,6 +12,7 @@ module Unhack.Data.Branch
 
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)
+import Data.Time        (UTCTime)
 import GHC.Generics     (Generic)
 
 import qualified Data.Text as T (Text)
@@ -24,16 +24,13 @@ import Unhack.Data.EmCommit (emptyEmCommit, EmCommit)
 
 -- Public API.
 
-data Branch = Branch { headCommit   :: Maybe EmCommit
+data Branch = Branch { createdAt    :: UTCTime
+                     , headCommit   :: Maybe EmCommit
                      , isActive     :: Bool
                      , name         :: T.Text
                      , repositoryId :: T.Text
+                     , updatedAt    :: UTCTime
                      } deriving (Generic, Show)
-
-emptyBranch = Branch { headCommit   = Nothing
-                     , isActive     = False
-                     , name         = ""
-                     , repositoryId = "" }
 
 bulkSetRepositoryId :: [Branch] -> T.Text -> [Branch]
 bulkSetRepositoryId branches repositoryId = map (\branch -> branch { repositoryId = repositoryId }) branches
@@ -43,15 +40,25 @@ bulkSetRepositoryId branches repositoryId = map (\branch -> branch { repositoryI
 
 instance FromJSON Branch where
     parseJSON (Object v) = Branch
-                           <$> v .:? "headCommit" .!= Nothing
+                           <$> v .:  "createdAt"
+                           <*> v .:? "headCommit" .!= Nothing
                            <*> v .:  "isActive"
                            <*> v .:  "name"
                            <*> v .:  "repositoryId"
+                           <*> v .:  "updatedAt"
     parseJSON invalid    = typeMismatch "Branch" invalid
 
 instance ToJSON Branch where
-    toJSON (Branch headCommit isActive name repositoryId) =
-        object [ "headCommit"   .= headCommit
+    toJSON (Branch createdAt
+                   headCommit
+                   isActive name
+                   repositoryId
+                   updatedAt
+           ) =
+        object [ "createdAt"    .= createdAt
+               , "headCommit"   .= headCommit
                , "isActive"     .= isActive
                , "name"         .= name
-               , "repositoryId" .= repositoryId ]
+               , "repositoryId" .= repositoryId
+               , "updatedAt"    .= updatedAt
+               ]

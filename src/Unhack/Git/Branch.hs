@@ -2,8 +2,6 @@
 
 module Unhack.Git.Branch
        ( branchesList
-       , branchesRecords
-       , listToRecords
        , originList
        ) where
 
@@ -58,11 +56,3 @@ branchesList directory = do
           textToList branches = T.lines $ T.filter (/= ' ') branches
           removeOrigins branches = map removeOrigin branches
           removeOrigin (T.stripPrefix "origin/" -> Just branchName) = branchName
-
-branchesRecords :: FilePath -> T.Text -> IO ([Branch])
-branchesRecords directory repositoryId = do
-    branchesAsList <- branchesList directory
-    return $ map (\branchName -> emptyBranch { repositoryId = repositoryId, name = branchName }) branchesAsList
-
-listToRecords :: [T.Text] -> [Branch]
-listToRecords branchesAsList = map (\branchName -> emptyBranch { name = branchName }) branchesAsList
