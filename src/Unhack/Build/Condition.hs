@@ -10,7 +10,7 @@ module Unhack.Build.Condition
 
 import qualified Data.Text     as T   (unpack, Text)
 import qualified Unhack.Config as UC  (Condition(..), ConditionProperty(..))
-import qualified Unhack.Issue  as UDI (accessProperty, propertyStringToList, Issue)
+import qualified Unhack.Issue  as UDI (accessListProperty, accessProperty, propertyStringToList, Issue)
 
 
 -- Public API.
@@ -89,4 +89,4 @@ propertiesCount properties operator issues = length $ filter (filterBy operator)
 
           -- Returns whether the annotation has the property with the given name and a value that contains the given
           -- value. This is relevant to multi-value properties.
-          propertyContains name value issue = T.unpack value `elem` (UDI.propertyStringToList $ UDI.accessProperty issue (T.unpack name))
+          propertyContains name value issue = T.unpack value `elem` (UDI.accessListProperty issue (T.unpack name))

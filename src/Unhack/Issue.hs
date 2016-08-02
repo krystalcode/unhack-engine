@@ -2,11 +2,12 @@
 
 module Unhack.Issue
        ( accessProperty
+       , accessListProperty
        , bulkSetProperty
        , bulkSetRepository
        , bulkSetCommit
        , displayIssue
-       , emptyIssue
+       , makeIssue
        , propertyStringToList
        , Issue(..)
        ) where
@@ -19,6 +20,7 @@ module Unhack.Issue
 import Data.Aeson
 import Data.Char  (isSpace)
 import Data.List
+import Data.Time  (UTCTime)
 
 import qualified Data.Text as T (dropWhile, dropWhileEnd, null, pack, splitOn, unpack)
 
@@ -71,7 +73,9 @@ accessProperty issue "title" = title issue
 accessProperty issue "type" = kind issue
 accessProperty issue "kind" = kind issue
 accessProperty issue "priority" = priority issue
-accessProperty issue "labels" = labels issue
+
+accessListProperty :: Issue -> String -> [String]
+accessListProperty issue "labels" = labels issue
 
 -- Convert a multi-value property from a comma-separated string to a list of strings.
 propertyStringToList :: String -> [String]
@@ -92,8 +96,8 @@ bulkSetRepository issues repository = map (setRepository repository) issues
 
 -- Functions for internal use.
 
-data Issue = Issue { repository :: EmbeddedRepository
-                   , commit :: EmIssueCommit
+data Issue = Issue { commit     :: EmIssueCommit
+                   , createdAt  :: UTCTime
                    {-
                      @Issue(
                        "Support path hierarchy in file property",
@@ -101,41 +105,54 @@ data Issue = Issue { repository :: EmbeddedRepository
                        priority="high"
                      )
                    -}
-                   , file :: String
-                   , title :: String
-                   , kind :: String
-                   , priority :: String
+                   , file       :: String
                    {-
                      @Issue(
-                       "Labels should be an array of strings"
-                       type="bug"
-                       priority="high"
+                       "Rename property from 'kind' to 'type''",
+                       type="improvement",
+                       priority="low"
                      )
                    -}
-                   , labels :: String
+                   , kind       :: String
+                   , labels     :: [String]
+                   , priority   :: String
+                   , repository :: EmbeddedRepository
+                   , title      :: String
+                   , updatedAt  :: UTCTime
                    } deriving (Show)
 
-emptyIssue = Issue { repository = emptyEmbeddedRepository
-                   , commit     = emptyEmIssueCommit
-                   , file       = ""
-                   , title      = ""
-                   , kind       = ""
-                   , priority   = ""
-                   , labels     = "" }
+makeIssue :: String -> String -> String -> [String] -> UTCTime -> Issue
+makeIssue title kind priority labels now
+    = Issue { commit     = emptyEmIssueCommit
+            , createdAt  = now
+            , file       = ""
+            , kind       = kind
+            , labels     = labels
+            , priority   = priority
+            , repository = emptyEmbeddedRepository
+            , title      = title
+            , updatedAt  = now
+            }
 
 instance ToJSON Issue where
-    toJSON (Issue repository commit file title kind priority labels) =
-        object [ "repository" .= repository
-               , "commit" .= commit
-               , "file" .= file
-               , "title" .= title
-               , "type" .= kind
-               , "priority" .= priority
-               , "labels" .= labels ]
+    toJSON (Issue commit createdAt file kind labels priority repository title updatedAt) =
+        object [ "commit"     .= commit
+               , "createdAt"  .= createdAt
+               , "file"       .= file
+               , "type"       .= kind
+               , "labels"     .= labels
+               , "priority"   .= priority
+               , "repository" .= repository
+               , "title"      .= title
+               , "updatedAt"  .= updatedAt
+               ]
 
 displayProperty :: Issue -> String -> String
+displayProperty issue "labels" = if labels == [] then "" else "labels: " ++ (concat $ intersperse "," labels)
+    where labels = accessListProperty issue "labels"
+
 displayProperty issue property = if text == "" then "" else property ++ ": " ++ text
-                                 where text = accessProperty issue property
+    where text = accessProperty issue property
 
 setRepository :: EmbeddedRepository -> Issue -> Issue
 setRepository repositoryValue issue = issue { repository = repositoryValue }

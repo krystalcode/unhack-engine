@@ -1,9 +1,7 @@
 module Unhack.Parser
        ( parseString
        , parseFileString
-       , parseFileString'
        , parseCommitFileString
-       , parseCommitFileString'
        , parseCommitContents
        ) where
 
@@ -12,6 +10,7 @@ module Unhack.Parser
 
 -- External dependencies.
 import Data.List       (intercalate)
+import Data.Time       (UTCTime)
 import Text.Regex.PCRE ((=~), getAllTextMatches)
 
 import qualified Data.Text as T (unpack, Text)
@@ -32,28 +31,25 @@ import Unhack.Data.EmIssueCommit
   )
 -}
 
-parseString :: T.Text -> [Issue]
-parseString input = map extractProperties issues
+parseString :: T.Text -> UTCTime -> [Issue]
+parseString input now = map (extractProperties' now) issues
             where issues = extractIssues $ T.unpack input
 
-parseFileString :: T.Text -> T.Text -> [Issue]
-parseFileString file input = bulkSetProperty issues "file" (T.unpack file)
-    where issues = parseString input
+parseFileString :: T.Text -> T.Text -> UTCTime -> [Issue]
+parseFileString file input now = bulkSetProperty issues "file" (T.unpack file)
+    where issues = parseString input now
 
-parseFileString' :: (T.Text, T.Text) -> [Issue]
-parseFileString' (file, input) = parseFileString file input
-
-parseCommitFileString :: EmIssueCommit -> T.Text -> T.Text -> [Issue]
-parseCommitFileString commit file input = bulkSetCommit issues commit
-    where issues = parseFileString file input
-
-parseCommitFileString' :: (EmIssueCommit, T.Text, T.Text) -> [Issue]
-parseCommitFileString' (commit, file, input) = parseCommitFileString commit file input
+parseCommitFileString :: EmIssueCommit -> T.Text -> T.Text -> UTCTime -> [Issue]
+parseCommitFileString commit file input now = bulkSetCommit issues commit
+    where issues = parseFileString file input now
 
 -- Given a commit and a list of its files with their contents, return the commit with a list of the issues contained in
 -- the given files' contents
-parseCommitContents :: (EmIssueCommit, [(T.Text, T.Text)]) -> (EmIssueCommit, [Issue])
-parseCommitContents (commit, contents) = (commit, concat $ map (\(file, content) -> parseCommitFileString commit file content) contents)
+parseCommitContents' :: (EmIssueCommit, [(T.Text, T.Text)]) -> UTCTime -> (EmIssueCommit, [Issue])
+parseCommitContents' (commit, contents) now = (commit, concat $ map (\(file, content) -> parseCommitFileString commit file content now) contents)
+
+parseCommitContents :: UTCTime -> (EmIssueCommit, [(T.Text, T.Text)]) -> (EmIssueCommit, [Issue])
+parseCommitContents now contents = parseCommitContents' contents now
 
 
 -- Functions for internal use.
@@ -66,16 +62,17 @@ regexAllMatches input = getAllTextMatches $ input =~ "@Issue\\(([\\s\\S]+?)\\)" 
 trimIssues :: [String] -> [String]
 trimIssues xs = map (takeWhile (/=')') . tail . dropWhile (/='(')) xs
 
-extractProperties :: String -> Issue
-extractProperties issue =
-    emptyIssue { title = propertyList !! 0
-               , kind = propertyList !! 1
-               , priority = propertyList !! 2
-               , labels = propertyList !! 3 }
+extractProperties :: String -> UTCTime -> Issue
+extractProperties issue now
+    = makeIssue (propertyList !! 0) (propertyList !! 1) (propertyList !! 2) (propertyStringToList $ propertyList !! 3) now
+
     where title = extractTitle issue
           optionalPropertyKeys = ["type", "priority", "labels"]
           optionalProperties = map (extractProperty issue) optionalPropertyKeys
           propertyList = [title] ++ optionalProperties
+
+extractProperties' :: UTCTime -> String -> Issue
+extractProperties' now issue = extractProperties issue now
 
 {-
   @Issue(
