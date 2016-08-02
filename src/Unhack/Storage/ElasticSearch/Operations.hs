@@ -180,6 +180,7 @@ bulkIndexDocuments' config settings@(USC.StorageIndexSettings key _ _ _) docs = 
                                         "branch"     -> branchMapping
                                         "commit"     -> commitMapping
                                         "issue"      -> issueMapping
+                                        "project"    -> projectMapping
 
 bulkUpdateDocuments' :: (ToJSON patch) => USC.StorageConfig -> USC.StorageIndexSettings -> [(DocId, patch)] -> IO (Reply)
 bulkUpdateDocuments' config settings@(USC.StorageIndexSettings key _ _ _) patches = withBH' config $ bulk (fromList ops)
