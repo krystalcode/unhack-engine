@@ -75,6 +75,7 @@ get config indexSettings commitId = do
 
     return maybeCommit
 
+-- Get multiple commit records by their IDs.
 mget :: USEC.StorageConfig -> [T.Text] -> IO ([Maybe UDC.Commit])
 mget storageConfig commitsIds = do
     response <- USEO.mgetDocuments' storageConfig indexSettings docsIds
