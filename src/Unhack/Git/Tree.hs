@@ -35,7 +35,7 @@ commitTree directory commit = do
     return $ either handleLeft id tree
 
     where command = T.concat ["git ls-tree --full-tree --name-only -r ", (hash commit)]
-          handleLeft exitCode = error $ show exitCode
+          handleLeft exitCode = error $ (show exitCode) ++ " while trying to get the git tree for commit " ++ (T.unpack (hash commit))
 
 commitTree' :: FilePath -> EmIssueCommit -> IO (EmIssueCommit, [T.Text])
 commitTree' directory commit = do
@@ -51,7 +51,7 @@ commitTreeLength directory hash = do
     where command = T.concat ["git ls-tree --full-tree --name-only -r ", hash]
           treeLines tree = filter (not . T.null) $ T.lines tree
           treeLength tree = length $ treeLines tree
-          handleLeft exitCode = error $ show exitCode
+          handleLeft exitCode = error $ (show exitCode) ++ " while trying to get the git tree's length for commit " ++ (T.unpack hash)
 
 -- Filter a git tree (given as a list of file paths) to exclude file paths that are not valid under the given glob
 -- patterns.
