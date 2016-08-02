@@ -52,7 +52,7 @@ bulkIndex storageConfig commits = do
     let eitherResult     = eitherDecode body :: Either String BulkEsResult
     let result           = either error id eitherResult
     let resultItems      = berItems result
-    let resultItemsInner = map bericCreate resultItems
+    let resultItemsInner = map beriiIndex resultItems
     let lNewCommitsIds   = map berId resultItemsInner
 
     return lNewCommitsIds
