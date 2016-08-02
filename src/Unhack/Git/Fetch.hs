@@ -9,7 +9,7 @@ module Unhack.Git.Fetch
 
 -- External dependencies.
 
-import System.Directory (createDirectoryIfMissing)
+import System.Directory (createDirectoryIfMissing, doesDirectoryExist)
 
 import qualified Data.Text as T (concat, intercalate, unpack, Text)
 
@@ -33,8 +33,22 @@ import qualified Unhack.Git.Location as UGL (base)
 -- Clone a git repository.
 clone :: T.Text -> T.Text -> T.Text -> IO (T.Text)
 clone vendor owner repository = do
+    -- Create the parent directory, if it does not exist.
+    -- The parent directory is named '/repositories/vendor/owner' and it needs
+    -- to be created before we try to clone the repository into it.
     createDirectoryIfMissing True directory
-    lazyProcess command directory
+
+    -- Check if the repository directory exists. If it exists, it means that the
+    -- repository has already been cloned and there is nothing to do here.
+    directoryExists <- doesDirectoryExist $ concat [directory, "/", T.unpack repository]
+
+    case directoryExists of
+
+        True  -> return "Repository already exists"
+
+        False -> do
+            lazyProcess command directory
+
     where command   = T.concat ["git clone --no-checkout ", url, " ", repository]
           directory = T.unpack $ T.intercalate "/" [UGL.base, vendor, owner]
           url       = case vendor of
