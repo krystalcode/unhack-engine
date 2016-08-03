@@ -28,11 +28,12 @@ areMet :: [UC.Condition] -> T.Text -> [UDIP.IssueProperties] -> Bool
 areMet conditions operator issuesProperties
     | operator == "and"      = not . elem False $ isMetList
     | operator == "or"       = elem True isMetList
-    -- Default to the "and" operator otherwise. This can happen if we have only one condition, or if there is a typo in
-    -- the configuration.
+    -- Default to the "and" operator otherwise. This can happen if we have only
+    -- one condition, or if there is a typo in the configuration.
     {-
       @Issue(
-        "Providing a default operator in case of error should happen when loading the configuration"
+        "Providing a default operator in case of error should happen when
+        loading the configuration"
         type="bug"
         priority="normal"
       )
@@ -47,7 +48,8 @@ isMet :: UC.Condition -> [UDIP.IssueProperties] -> Bool
 isMet condition issuesProperties
     {-
       @Issue(
-        "Implement validation that ensures the condition type is one of the supported ones"
+        "Implement validation that ensures the condition type is one of the
+        supported ones"
         type="bug"
         priority="normal"
       )
