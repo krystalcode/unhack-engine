@@ -14,6 +14,7 @@ module Unhack.Pubsub.Repository
 import Data.Aeson          (eitherDecode)
 import Data.List.NonEmpty  (fromList)
 import Data.Maybe          (fromJust, isJust, isNothing)
+import Data.Time           (getCurrentTime)
 import Database.Bloodhound
 import Network.HTTP.Client
 
@@ -70,6 +71,10 @@ import qualified Unhack.Storage.ElasticSearch.Operations      as USEO  (bulkInde
 clone :: USEC.StorageConfig -> USEC.StorageIndexSettings -> T.Text -> IO ()
 clone config indexSettings repositoryId = do
 
+    -- The current time that will be used for the 'createdAt' and 'updatedAt'
+    -- fields.
+    now <- getCurrentTime
+
     -- Get the repository record.
     maybeRepository <- USEDR.get config indexSettings repositoryId
 
@@ -109,7 +114,7 @@ clone config indexSettings repositoryId = do
 
             -- If cloning the repository was successful, flag the repository as
             -- accessible.
-            accessibleResponse <- USEDR.markAccessible config indexSettings repositoryId repository
+            accessibleResponse <- USEDR.markAccessible config indexSettings repositoryId repository now
 
             -- Send a pubsub message to analyse all commits for the active branches of thies repository.
             pubsubResponse <- UPP.publish [(repositoryId, T.intercalate ":" ["repositories_analyse_all", repositoryId])]
@@ -310,6 +315,10 @@ analyseAll storageConfig indexSettings repositoryId = do
 analyseCommits :: USEC.StorageConfig -> USEC.StorageIndexSettings -> T.Text -> [T.Text] -> IO ()
 analyseCommits storageConfig indexSettings repositoryId commitsIds = do
 
+    -- The current time that will be used for the 'createdAt' and 'updatedAt'
+    -- fields.
+    now <- getCurrentTime
+
     -- Get the repository record.
     maybeRepository <- USEDR.get storageConfig indexSettings repositoryId
 
@@ -416,7 +425,7 @@ analyseCommits storageConfig indexSettings repositoryId commitsIds = do
                     case (UDR.isProcessed repository) of
 
                         False -> do
-                            processedResponse <- USEDR.markProcessed storageConfig indexSettings repositoryId repository
+                            processedResponse <- USEDR.markProcessed storageConfig indexSettings repositoryId repository now
                             return mempty
 
                         True  -> return mempty
@@ -425,6 +434,10 @@ analyseCommits storageConfig indexSettings repositoryId commitsIds = do
 -- given repository.
 updateHeads :: USEC.StorageConfig -> USEC.StorageIndexSettings -> T.Text -> IO ()
 updateHeads storageConfig indexSettings repositoryId = do
+
+    -- The current time that will be used for the 'createdAt' and 'updatedAt'
+    -- fields.
+    now <- getCurrentTime
 
     -- Get the repository record.
     maybeRepository <- USEDR.get storageConfig indexSettings repositoryId
@@ -487,8 +500,7 @@ updateHeads storageConfig indexSettings repositoryId = do
             let defaultBranchIdWithEmCommit = filter (\(branchId, commit) -> branchId == UDEB._id defaultBranch) branchesIdsWithEmCommits
             let repositoryIdWithEmCommit    = [(repositoryId, snd $ defaultBranchIdWithEmCommit !! 0)]
 
-            updateRepositoryResponse <- USEDR.updateHeadCommits storageConfig repositoryIdWithEmCommit
-            print updateRepositoryResponse
+            updateRepositoryResponse <- USEDR.updateHeadCommits storageConfig repositoryIdWithEmCommit now
 
             {-
                 @Issue(

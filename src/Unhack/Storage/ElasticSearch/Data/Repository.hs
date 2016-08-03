@@ -13,6 +13,7 @@ module Unhack.Storage.ElasticSearch.Data.Repository
 -- External dependencies.
 
 import Data.Aeson          ((.=), eitherDecode, object, ToJSON)
+import Data.Time           (UTCTime)
 import Database.Bloodhound
 import GHC.Generics        (Generic)
 import Network.HTTP.Client
@@ -46,20 +47,20 @@ get config indexSettings repositoryId = do
     return maybeRepository
 
 -- Set the 'isAccessible' flag to true for the given repository.
-markAccessible :: USEC.StorageConfig -> USEC.StorageIndexSettings -> T.Text -> UDR.Repository -> IO (Reply)
-markAccessible config indexSettings repositoryId repository = USEO.updateDocument' config indexSettings updatedRepository (DocId repositoryId)
-    where updatedRepository = repository { UDR.isAccessible = True }
+markAccessible :: USEC.StorageConfig -> USEC.StorageIndexSettings -> T.Text -> UDR.Repository -> UTCTime -> IO (Reply)
+markAccessible config indexSettings repositoryId repository now = USEO.updateDocument' config indexSettings updatedRepository (DocId repositoryId)
+    where updatedRepository = repository { UDR.isAccessible = True, UDR.updatedAt = now }
 
 -- Set the 'isProcessed' flag to true for the given repository.
-markProcessed :: USEC.StorageConfig -> USEC.StorageIndexSettings -> T.Text -> UDR.Repository -> IO (Reply)
-markProcessed config indexSettings repositoryId repository = USEO.updateDocument' config indexSettings updatedRepository (DocId repositoryId)
-    where updatedRepository = repository { UDR.isProcessed = True }
+markProcessed :: USEC.StorageConfig -> USEC.StorageIndexSettings -> T.Text -> UDR.Repository -> UTCTime -> IO (Reply)
+markProcessed config indexSettings repositoryId repository now = USEO.updateDocument' config indexSettings updatedRepository (DocId repositoryId)
+    where updatedRepository = repository { UDR.isProcessed = True, UDR.updatedAt = now }
 
 -- Update the 'headCommit' fields for multiple repositories.
-updateHeadCommits :: USEC.StorageConfig -> [(T.Text, UDEC.EmCommit)] -> IO (Reply)
-updateHeadCommits storageConfig repositoriesIdsWithEmCommits = USEO.bulkUpdateDocuments' storageConfig indexSettings patches
+updateHeadCommits :: USEC.StorageConfig -> [(T.Text, UDEC.EmCommit)] -> UTCTime -> IO (Reply)
+updateHeadCommits storageConfig repositoriesIdsWithEmCommits now = USEO.bulkUpdateDocuments' storageConfig indexSettings $ patches now
 
-    where patches       = map (\(repositoryId, repositoryHeadCommit) -> (DocId repositoryId, HeadCommit repositoryHeadCommit)) repositoriesIdsWithEmCommits
+    where patches now   = map (\(repositoryId, repositoryHeadCommit) -> (DocId repositoryId, HeadCommit repositoryHeadCommit now)) repositoriesIdsWithEmCommits
           indexSettings = USEC.indexSettingsFromConfig "repository" storageConfig
 
 
@@ -67,9 +68,11 @@ updateHeadCommits storageConfig repositoriesIdsWithEmCommits = USEO.bulkUpdateDo
 
 -- Patches required for the Update API.
 
-data Patch = HeadCommit { headCommit :: UDEC.EmCommit }
+data Patch = HeadCommit { headCommit :: UDEC.EmCommit, updatedAt :: UTCTime }
              deriving (Show, Generic)
 
 instance ToJSON Patch where
-    toJSON (HeadCommit headCommit) =
-        object [ "headCommit" .= headCommit ]
+    toJSON (HeadCommit headCommit updatedAt) =
+        object [ "headCommit" .= headCommit
+               , "updatedAt"  .= updatedAt
+               ]
