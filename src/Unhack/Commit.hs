@@ -32,13 +32,13 @@ data Commit = Commit { branches     :: Maybe [UDEB.EmBranch]
                      , hash         :: T.Text
                      , isProcessed  :: Bool
                      , repositoryId :: T.Text
-                     , time         :: T.Text
+                     , time         :: UTCTime
                      , updatedAt    :: UTCTime
                      } deriving (Generic, Show)
 
 -- Helper function for creating a Commit record by providing only the most
 -- essential fields.
-makeCommit :: Maybe [UDEB.EmBranch] -> T.Text -> T.Text -> T.Text -> UTCTime -> Commit
+makeCommit :: Maybe [UDEB.EmBranch] -> T.Text -> T.Text -> UTCTime -> UTCTime -> Commit
 makeCommit branches hash repositoryId time now
     = Commit
         { branches     = branches

@@ -39,7 +39,7 @@ data Project = Project
     , ownerEntityId   :: DocId
     , ownerEntityType :: EntityType
     , repositories    :: Maybe [UDEPR.EmProjectRepository]
-    , updatedAt           :: UTCTime
+    , updatedAt       :: UTCTime
     } deriving (Generic, Show)
 
 data Build = Build

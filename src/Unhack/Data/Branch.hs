@@ -19,7 +19,7 @@ import qualified Data.Text as T (Text)
 
 -- Internal dependencies.
 
-import Unhack.Data.EmCommit (emptyEmCommit, EmCommit)
+import Unhack.Data.EmCommit (EmCommit)
 
 
 -- Public API.

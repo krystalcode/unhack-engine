@@ -40,7 +40,11 @@ import qualified Data.Text as T (concat, pack, Text)
 
 -- Internal dependencies.
 
+import Unhack.Storage.ElasticSearch.Mappings.Branch
+import Unhack.Storage.ElasticSearch.Mappings.Commit
+import Unhack.Storage.ElasticSearch.Mappings.Issue
 import Unhack.Storage.ElasticSearch.Mappings.Project
+import Unhack.Storage.ElasticSearch.Mappings.Repository
 
 import qualified Unhack.Issue                        as UDI (Issue)
 import qualified Unhack.Storage.ElasticSearch.Config as USC

@@ -1,16 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Unhack.Issue
-       ( accessProperty
-       , accessListProperty
-       , bulkSetProperty
-       , bulkSetRepository
-       , bulkSetCommit
-       , displayIssue
-       , makeIssue
-       , propertyStringToList
-       , Issue(..)
-       ) where
+    ( Issue(..)
+    ) where
 
 
 -- Imports.
@@ -18,147 +10,45 @@ module Unhack.Issue
 -- External dependencies.
 
 import Data.Aeson
-import Data.Char  (isSpace)
-import Data.List
 import Data.Time  (UTCTime)
 
-import qualified Data.Text as T (dropWhile, dropWhileEnd, null, pack, splitOn, unpack)
+import qualified Data.Text as T (Text)
 
 -- Internal dependencies.
 
-import Unhack.Data.EmIssueCommit
-import Unhack.Data.EmbeddedRepository
+import Unhack.Data.EmIssueCommit      (EmIssueCommit)
+import Unhack.Data.EmbeddedRepository (EmbeddedRepository)
+import Unhack.Data.IssueProperties    (IssueProperties)
 
 
 -- Public API.
 
-{-
-  @Issue(
-    "Use Text instead of String everywhere in the Issue module",
-    type="task",
-    priority="low"
-  )
--}
-
-{-
-  @Issue(
-    "Add spaces so that all property values align with the value of the property
-    with the longest key e.g. 'title' value aligns with 'priority' value etc.",
-    type="improvement",
-    priority="low"
-  )
--}
-displayIssue :: Issue -> String
-displayIssue issue = unlines (["{"] `union` indentedProperties `union` ["}"])
-                     where properties = ["file", "title", "kind", "priority", "labels"]
-                           renderedProperties = map (displayProperty issue) properties
-                           nonEmptyProperties = filter (\x -> x /= "") renderedProperties
-                           indentedProperties = map ("    " ++) nonEmptyProperties
-
-{-
-  @Issue(
-    "There must be a better way than pattern matching",
-    type="bug",
-    priority="normal",
-  )
-  @Issue(
-    "Replace all calls for the 'kind' property with calls for the 'type' property",
-    type="refactoring",
-    priority="normal",
-  )
--}
-accessProperty :: Issue -> String -> String
-accessProperty issue "file" = file issue
-accessProperty issue "title" = title issue
-accessProperty issue "type" = kind issue
-accessProperty issue "kind" = kind issue
-accessProperty issue "priority" = priority issue
-
-accessListProperty :: Issue -> String -> [String]
-accessListProperty issue "labels" = labels issue
-
--- Convert a multi-value property from a comma-separated string to a list of strings.
-propertyStringToList :: String -> [String]
-propertyStringToList labels = map T.unpack $ filter (not . T.null) trimmed
-    where list    = T.splitOn "," $ T.pack labels
-          trimmed = map (T.dropWhile isSpace . T.dropWhileEnd isSpace) list
-
-bulkSetProperty :: [Issue] -> String -> String -> [Issue]
-bulkSetProperty issues propertyKey propertyValue
-    | propertyKey == "file" = map (setFile propertyValue) issues
-
-bulkSetCommit :: [Issue] -> EmIssueCommit -> [Issue]
-bulkSetCommit issues commit = map (setCommit commit) issues
-
-bulkSetRepository :: [Issue] -> EmbeddedRepository -> [Issue]
-bulkSetRepository issues repository = map (setRepository repository) issues
+data Issue = Issue
+    { commit     :: EmIssueCommit
+    , createdAt  :: UTCTime
+    {-
+      @Issue(
+        "Support path hierarchy in file property",
+        type="improvement",
+        priority="high"
+      )
+    -}
+    , file       :: T.Text
+    , properties :: IssueProperties
+    , repository :: EmbeddedRepository
+    , updatedAt  :: UTCTime
+    } deriving (Show)
 
 
 -- Functions for internal use.
 
-data Issue = Issue { commit     :: EmIssueCommit
-                   , createdAt  :: UTCTime
-                   {-
-                     @Issue(
-                       "Support path hierarchy in file property",
-                       type="improvement",
-                       priority="high"
-                     )
-                   -}
-                   , file       :: String
-                   {-
-                     @Issue(
-                       "Rename property from 'kind' to 'type''",
-                       type="improvement",
-                       priority="low"
-                     )
-                   -}
-                   , kind       :: String
-                   , labels     :: [String]
-                   , priority   :: String
-                   , repository :: EmbeddedRepository
-                   , title      :: String
-                   , updatedAt  :: UTCTime
-                   } deriving (Show)
-
-makeIssue :: String -> String -> String -> [String] -> UTCTime -> Issue
-makeIssue title kind priority labels now
-    = Issue { commit     = emptyEmIssueCommit
-            , createdAt  = now
-            , file       = ""
-            , kind       = kind
-            , labels     = labels
-            , priority   = priority
-            , repository = emptyEmbeddedRepository
-            , title      = title
-            , updatedAt  = now
-            }
-
+-- JSON conversions.
 instance ToJSON Issue where
-    toJSON (Issue commit createdAt file kind labels priority repository title updatedAt) =
+    toJSON (Issue commit createdAt file properties repository updatedAt) =
         object [ "commit"     .= commit
                , "createdAt"  .= createdAt
                , "file"       .= file
-               , "type"       .= kind
-               , "labels"     .= labels
-               , "priority"   .= priority
+               , "properties" .= properties
                , "repository" .= repository
-               , "title"      .= title
                , "updatedAt"  .= updatedAt
                ]
-
-displayProperty :: Issue -> String -> String
-displayProperty issue "labels" = if labels == [] then "" else "labels: " ++ (concat $ intersperse "," labels)
-    where labels = accessListProperty issue "labels"
-
-displayProperty issue property = if text == "" then "" else property ++ ": " ++ text
-    where text = accessProperty issue property
-
-setRepository :: EmbeddedRepository -> Issue -> Issue
-setRepository repositoryValue issue = issue { repository = repositoryValue }
-
-setFile :: String -> Issue -> Issue
-setFile fileValue issue = issue { file = fileValue }
-
-setCommit :: EmIssueCommit -> Issue -> Issue
-setCommit commitValue issue = issue { commit = commitValue }

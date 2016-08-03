@@ -1,20 +1,20 @@
 # For more information, see: https://github.com/commercialhaskell/stack/blob/release/doc/yaml_configuration.md
 
 # Specifies the GHC version and set of packages available (e.g., lts-3.5, nightly-2015-09-21, ghc-7.10.2)
-resolver: lts-6.2
+resolver: lts-6.10
 
 # Local packages, usually specified by relative directory name
 packages:
   - '.'
   - location :
-      git    : https://github.com/krystalcode/bloodhound.git
-      commit : 7d5fa4142dbfc7f634e5b3ce6accb6d5d6dd5222
+      git    : https://github.com/krystalcode/aeson.git
+      commit : efdb43e9ee1865cd5cd74c20f9928f9cc9b4094e
   - location :
-      git    : https://github.com/bos/aeson.git
-      commit : 4de5a203eeeea593457bc92bc40062f3ea830426
+      git    : https://github.com/krystalcode/bloodhound.git
+      commit : f85e046890f210e488adf54992e830b63196a369
   - location :
       git    : https://github.com/informatikr/hedis.git
-      commit : 8f7c5318fbc84c30659bf0a1775a5e15188fd9f8
+      commit : e86143db2d4e76fe85340c78c01da7bc3722ae5a
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps: []

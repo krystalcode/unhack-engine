@@ -24,6 +24,8 @@ library
                      , Unhack.Data.EmBranch
                      , Unhack.Data.EmCommit
                      , Unhack.Data.EmProjectRepository
+                     , Unhack.Data.GitCommit
+                     , Unhack.Data.IssueProperties
                      , Unhack.Data.Project
                      , Unhack.Cmd.Indexes
                      , Unhack.Cmd.Modes
@@ -49,15 +51,20 @@ library
                      , Unhack.Storage.ElasticSearch.Data.Branch
                      , Unhack.Storage.ElasticSearch.Data.Commit
                      , Unhack.Storage.ElasticSearch.Data.Repository
+                     , Unhack.Storage.ElasticSearch.Mappings.Branch
+                     , Unhack.Storage.ElasticSearch.Mappings.Commit
+                     , Unhack.Storage.ElasticSearch.Mappings.Issue
                      , Unhack.Storage.ElasticSearch.Mappings.Project
+                     , Unhack.Storage.ElasticSearch.Mappings.Repository
                      , Unhack.Storage.ElasticSearch.Operations
                      , Unhack.Types
+                     , Unhack.Util
   build-depends:       aeson >= 0.10.0.0 && < 1
                      , attoparsec >= 0.13.0.1 && < 1
                      , base >= 4.7 && < 5
                      , binary >= 0.7.5.0 && < 1
                      , bloodhound >= 0.10.0.0 && < 1
-                     , bytestring >= 0.10.6.0 && < 1
+                     , bytestring >= 0.10.3.0 && < 1
                      , cmdargs >= 0.10 && < 1
                      , containers >= 0.5.6.2 && < 1
                      , directory >= 1.2.2.0 && < 2
@@ -70,6 +77,7 @@ library
                      , semigroups >= 0.18.1 && < 1
                      , split >= 0.2.3 && < 1
                      , text >= 1.2.2.0 && < 2
+                     , time >= 1.5.0.1 && < 2
                      , vector >= 0.11.0.0 && < 1
                      , yaml >= 0.8.15.1 && < 1
   default-language:    Haskell2010

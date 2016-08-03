@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Unhack.Storage.ElasticSearch.Mappings.Project
-       ( projectMapping
-       , ProjectMapping(..) )
-       where
+    ( projectMapping
+    , ProjectMapping(..)
+    ) where
 
 
 -- Imports.
@@ -11,7 +11,7 @@ module Unhack.Storage.ElasticSearch.Mappings.Project
 import Data.Aeson
 import Database.Bloodhound
 
-import qualified Data.Text as T (concat, pack, Text)
+import qualified Data.Text as T (Text)
 
 
 -- Public API.
@@ -31,10 +31,10 @@ instance ToJSON ProjectMapping where
                 [ "build" .= object
                     [ "type"  .= ("nested" :: T.Text)
                     , "properties" .= object
-                        [ "status"  .= object
+                        [ "message" .= object
                             [ "type"  .= ("string"       :: T.Text)
                             , "index" .= ("not_analyzed" :: T.Text) ]
-                        , "message" .= object
+                        , "status"  .= object
                             [ "type"  .= ("string"       :: T.Text)
                             , "index" .= ("not_analyzed" :: T.Text) ]]] -- End of 'build' field.
 
@@ -50,13 +50,13 @@ instance ToJSON ProjectMapping where
                     [ "type"  .= ("string"       :: T.Text)
                     , "index" .= ("not_analyzed" :: T.Text) ] -- End of 'name' field.
 
-                , "ownerEntityType" .= object
-                    [ "type"  .= ("string"       :: T.Text)
-                    , "index" .= ("not_analyzed" :: T.Text) ] -- End of 'ownerEntityType' field.
-
                 , "ownerEntityId" .= object
                     [ "type"  .= ("string"       :: T.Text)
                     , "index" .= ("not_analyzed" :: T.Text) ] -- End of 'ownerEntityId' field.
+
+                , "ownerEntityType" .= object
+                    [ "type"  .= ("string"       :: T.Text)
+                    , "index" .= ("not_analyzed" :: T.Text) ] -- End of 'ownerEntityType' field.
 
                 , "repositories" .= object
                     [ "type"  .= ("nested" :: T.Text)
@@ -71,7 +71,7 @@ instance ToJSON ProjectMapping where
                             , "index" .= ("not_analyzed" :: T.Text) ] -- End of 'repositories.name' field.
 
                         , "defaultBranch"   .= object
-                            [ "type"  .= ("nested"         :: T.Text)
+                            [ "type"  .= ("nested" :: T.Text)
                             , "properties" .= object
                                 [ "_id" .= object
                                     [ "type"   .= ("string"       :: T.Text)
@@ -81,7 +81,7 @@ instance ToJSON ProjectMapping where
                                     , "index"  .= ("not_analyzed" :: T.Text) ]]] -- End of 'repositories.defaultBranch' field.
 
                         , "headCommit" .= object
-                            [ "type"  .= ("nested"         :: T.Text)
+                            [ "type"  .= ("nested" :: T.Text)
                             , "properties" .= object
                                 [ "_id"          .= object
                                     [ "type"   .= ("string"       :: T.Text)
@@ -91,7 +91,7 @@ instance ToJSON ProjectMapping where
                                     , "index"  .= ("not_analyzed" :: T.Text) ]
                                 , "time" .= object
                                     [ "type"   .= ("date"         :: T.Text)
-                                    , "format" .= ("epoch_second" :: T.Text) ]
+                                    , "format" .= ("date_time"    :: T.Text) ]
                                 , "buildStatus" .= object
                                     [ "type"   .= ("string"       :: T.Text)
                                     , "index"  .= ("not_analyzed" :: T.Text) ]

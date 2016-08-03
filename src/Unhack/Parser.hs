@@ -1,24 +1,23 @@
 module Unhack.Parser
-       ( parseString
-       , parseFileString
-       , parseCommitFileString
-       , parseCommitContents
-       ) where
+    ( parseCommitContents
+    ) where
 
 
 -- Imports.
 
 -- External dependencies.
-import Data.List       (intercalate)
+import Data.List       (dropWhile, intercalate)
+import Data.Maybe      (fromJust, isNothing)
 import Data.Time       (UTCTime)
 import Text.Regex.PCRE ((=~), getAllTextMatches)
 
-import qualified Data.Text as T (unpack, Text)
+import qualified Data.Text as T (null, pack, unpack, Text)
 
 -- Internal dependencies.
 
-import Unhack.Issue
-import Unhack.Data.EmIssueCommit
+import Unhack.Data.EmIssueCommit   (EmIssueCommit)
+import Unhack.Data.IssueProperties (IssueProperties(..))
+import Unhack.Util                 (csvToList)
 
 
 -- Public API.
@@ -31,28 +30,21 @@ import Unhack.Data.EmIssueCommit
   )
 -}
 
-parseString :: T.Text -> UTCTime -> [Issue]
-parseString input now = map (extractProperties' now) issues
-            where issues = extractIssues $ T.unpack input
-
-parseFileString :: T.Text -> T.Text -> UTCTime -> [Issue]
-parseFileString file input now = bulkSetProperty issues "file" (T.unpack file)
-    where issues = parseString input now
-
-parseCommitFileString :: EmIssueCommit -> T.Text -> T.Text -> UTCTime -> [Issue]
-parseCommitFileString commit file input now = bulkSetCommit issues commit
-    where issues = parseFileString file input now
-
 -- Given a commit and a list of its files with their contents, return the commit with a list of the issues contained in
 -- the given files' contents
-parseCommitContents' :: (EmIssueCommit, [(T.Text, T.Text)]) -> UTCTime -> (EmIssueCommit, [Issue])
-parseCommitContents' (commit, contents) now = (commit, concat $ map (\(file, content) -> parseCommitFileString commit file content now) contents)
-
-parseCommitContents :: UTCTime -> (EmIssueCommit, [(T.Text, T.Text)]) -> (EmIssueCommit, [Issue])
-parseCommitContents now contents = parseCommitContents' contents now
+parseCommitContents :: (EmIssueCommit, [(T.Text, T.Text)]) -> (EmIssueCommit, [(T.Text, [IssueProperties])])
+parseCommitContents (commit, contents) = (commit, map (\(file, content) -> parseFileString file content) contents)
 
 
 -- Functions for internal use.
+
+parseString :: T.Text -> [IssueProperties]
+parseString input = map extractProperties issues
+            where issues = extractIssues $ T.unpack input
+
+parseFileString :: T.Text -> T.Text -> (T.Text, [IssueProperties])
+parseFileString file input = (file, parseString input)
+
 extractIssues :: String -> [String]
 extractIssues input = trimIssues . regexAllMatches $ input
 
@@ -62,17 +54,22 @@ regexAllMatches input = getAllTextMatches $ input =~ "@Issue\\(([\\s\\S]+?)\\)" 
 trimIssues :: [String] -> [String]
 trimIssues xs = map (takeWhile (/=')') . tail . dropWhile (/='(')) xs
 
-extractProperties :: String -> UTCTime -> Issue
-extractProperties issue now
-    = makeIssue (propertyList !! 0) (propertyList !! 1) (propertyList !! 2) (propertyStringToList $ propertyList !! 3) now
+extractProperties :: String -> IssueProperties
+extractProperties issue
+    = IssueProperties
+        { labels   = extractMultiValueProperty issue "labels"
+        , priority = extractProperty issue "priority"
+        , title    = extractTitle issue
+        , type'    = extractProperty issue "type"
+        }
 
-    where title = extractTitle issue
-          optionalPropertyKeys = ["type", "priority", "labels"]
-          optionalProperties = map (extractProperty issue) optionalPropertyKeys
-          propertyList = [title] ++ optionalProperties
+extractMultiValueProperty :: String -> String -> Maybe [T.Text]
+extractMultiValueProperty issue property
+    = if   isNothing maybeCSVValue
+      then Nothing
+      else Just (csvToList $ fromJust maybeCSVValue)
 
-extractProperties' :: UTCTime -> String -> Issue
-extractProperties' now issue = extractProperties issue now
+    where maybeCSVValue = extractProperty issue property
 
 {-
   @Issue(
@@ -82,13 +79,14 @@ extractProperties' now issue = extractProperties issue now
     priority="normal"
   )
 -}
-extractProperty :: String -> String -> String
-extractProperty issue property = stripNewLines . trimProperty $ (issue =~ pattern :: String)
+extractProperty :: String -> String -> Maybe T.Text
+extractProperty issue property = if value == "" then Nothing else Just (T.pack value)
                 where pattern = property ++ "=\"([^\"]+)\""
+                      value   = stripNewLines . trimProperty $ (issue =~ pattern :: String)
 
-extractTitle :: String -> String
-extractTitle issue = if validTitle /= "" then validTitle else issue
-                     where titleWithKey = extractProperty issue "title"
+extractTitle :: String -> T.Text
+extractTitle issue = if T.null validTitle then T.pack issue else validTitle
+                     where maybeTitleWithKey = extractProperty issue "title"
                            {-
                              @Issue(
                                "Reuse extractProperty when it accepts a pattern as an argument",
@@ -98,7 +96,7 @@ extractTitle issue = if validTitle /= "" then validTitle else issue
                              )
                            -}
                            titleWithoutKey = stripNewLines . trimProperty $ (issue =~ "\"([^\"]+)\"" :: String)
-                           validTitle = if titleWithKey /= "" then titleWithKey else titleWithoutKey
+                           validTitle = if isNothing maybeTitleWithKey then T.pack titleWithoutKey else fromJust maybeTitleWithKey
 
 stripNewLines :: String -> String
 stripNewLines [] = []

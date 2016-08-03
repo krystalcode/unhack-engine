@@ -1,8 +1,7 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 
 module Unhack.Data.EmCommit
-       ( emptyEmCommit
-       , fromCommits
+       ( fromCommits
        , EmCommit(..)
        ) where
 
@@ -13,6 +12,7 @@ module Unhack.Data.EmCommit
 
 import Data.Aeson
 import Data.Aeson.Types          (typeMismatch)
+import Data.Time                 (UTCTime)
 import Database.Bloodhound.Types (DocId(..))
 import GHC.Generics              (Generic)
 
@@ -28,17 +28,9 @@ import qualified Unhack.Commit as UC
 data EmCommit = EmCommit
     { _id          :: DocId
     , hash         :: T.Text
-    , time         :: T.Text
+    , time         :: UTCTime
     , buildStatus  :: T.Text
     , buildMessage :: T.Text } deriving (Generic, Show)
-
-emptyEmCommit :: EmCommit
-emptyEmCommit = EmCommit
-    { _id          = DocId ""
-    , hash         = ""
-    , time         = ""
-    , buildStatus  = ""
-    , buildMessage = ""}
 
 -- Get a list of EmCommit records from a list of Commit records with their IDs.
 fromCommits :: [(DocId, UC.Commit)] -> [EmCommit]

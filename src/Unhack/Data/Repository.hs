@@ -21,8 +21,8 @@ import qualified Data.Text as T (Text)
 
 import Unhack.Types (EntityType)
 
-import Unhack.Data.EmBranch (emptyEmBranch, EmBranch)
-import Unhack.Data.EmCommit (emptyEmCommit, EmCommit)
+import Unhack.Data.EmBranch (EmBranch)
+import Unhack.Data.EmCommit (EmCommit)
 
 
 -- Public API.
