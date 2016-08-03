@@ -493,7 +493,7 @@ updateHeads storageConfig indexSettings repositoryId = do
             let branchesWithEmCommits      = map (\branchWithCommit -> fromJust branchWithCommit) justBranchesWithEmCommits
             let branchesIdsWithEmCommits   = map (\(branch, commit) -> (UDEB._id branch, commit)) branchesWithEmCommits
 
-            updateBranchesResponse <- USEDB.updateHeadCommits storageConfig branchesIdsWithEmCommits
+            updateBranchesResponse <- USEDB.updateHeadCommits storageConfig branchesIdsWithEmCommits now
 
             -- Update the head commit for the repository as well.
             let defaultBranch = UDR.defaultBranch repository
