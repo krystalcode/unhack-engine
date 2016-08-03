@@ -50,6 +50,7 @@ library
                      , Unhack.Storage.ElasticSearch.Config
                      , Unhack.Storage.ElasticSearch.Data.Branch
                      , Unhack.Storage.ElasticSearch.Data.Commit
+                     , Unhack.Storage.ElasticSearch.Data.Project
                      , Unhack.Storage.ElasticSearch.Data.Repository
                      , Unhack.Storage.ElasticSearch.Mappings.Branch
                      , Unhack.Storage.ElasticSearch.Mappings.Commit
