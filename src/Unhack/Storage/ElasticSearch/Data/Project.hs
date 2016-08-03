@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, RecordWildCards, OverloadedStrings #-}
 
 module Unhack.Storage.ElasticSearch.Data.Project
        ( bulkUpdateRepositories
@@ -13,6 +13,7 @@ module Unhack.Storage.ElasticSearch.Data.Project
 
 import Data.Aeson          ((.=), eitherDecode, object, ToJSON)
 import Data.Maybe          (fromJust, isJust, isNothing)
+import Data.Time           (UTCTime)
 import Database.Bloodhound
 import GHC.Generics        (Generic)
 import Network.HTTP.Client
@@ -34,10 +35,10 @@ import qualified Unhack.Storage.ElasticSearch.Operations      as USEO  (bulkUpda
 -- Bulk update the repositories field for projects.
 -- At the same we recalculate and update the project's build status, because we always want to keep
 -- it up to date if the included repositories or their build statuses change.
-bulkUpdateRepositories :: USEC.StorageConfig -> M.Map DocId (Maybe [UDEPR.EmProjectRepository]) -> IO (Reply)
-bulkUpdateRepositories storageConfig mEmRepositoriesWithProjectsIds = USEO.bulkUpdateDocuments' storageConfig indexSettings patches
+bulkUpdateRepositories :: USEC.StorageConfig -> M.Map DocId (Maybe [UDEPR.EmProjectRepository]) -> UTCTime -> IO (Reply)
+bulkUpdateRepositories storageConfig mEmRepositoriesWithProjectsIds now = USEO.bulkUpdateDocuments' storageConfig indexSettings $ patches now
 
-    where patches       = M.toList $ M.map (\emRepositories -> Repositories (UDP.combineBuilds emRepositories) emRepositories) mEmRepositoriesWithProjectsIds
+    where patches now   = M.toList $ M.map (\emRepositories -> Repositories (UDP.combineBuilds emRepositories) emRepositories now) mEmRepositoriesWithProjectsIds
           indexSettings = projectIndexSettings storageConfig
 
 -- Get a project record given its ID.
@@ -99,13 +100,18 @@ mgetActiveByRepositoryId storageConfig repositoryId = do
 -- The patch for updating the repositories field contains the build field as
 -- well. This is because when we update the repositories of a project we always
 -- want to recalculate its build status.
-data Patch = Repositories { build :: Maybe UDP.Build, repositories :: Maybe [UDEPR.EmProjectRepository] }
-             deriving (Show, Generic)
+data Patch = Repositories
+    { build        :: Maybe UDP.Build
+    , repositories :: Maybe [UDEPR.EmProjectRepository]
+    , updatedAt    :: UTCTime
+    } deriving (Generic, Show)
 
 instance ToJSON Patch where
-    toJSON (Repositories build repositories) =
-        object [ "build"        .= build
-               , "repositories" .= repositories ]
+    toJSON Repositories {..} = omitNulls
+        [ "build"        .= build
+        , "repositories" .= repositories
+        , "updatedAt"    .= updatedAt
+        ]
 
 
 -- Functions/types for internal use.
