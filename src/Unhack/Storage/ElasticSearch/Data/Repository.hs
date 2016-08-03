@@ -46,6 +46,13 @@ get config indexSettings repositoryId = do
 
     return maybeRepository
 
+{-
+  @Issue(
+    "Update flag fields in records using the Update API instead of submitting the whole document again"
+    type="improvement"
+    priority="low"
+  )
+-}
 -- Set the 'isAccessible' flag to true for the given repository.
 markAccessible :: USEC.StorageConfig -> USEC.StorageIndexSettings -> T.Text -> UDR.Repository -> UTCTime -> IO (Reply)
 markAccessible config indexSettings repositoryId repository now = USEO.updateDocument' config indexSettings updatedRepository (DocId repositoryId)
