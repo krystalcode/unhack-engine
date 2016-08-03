@@ -16,6 +16,7 @@ module Unhack.Storage.ElasticSearch.Data.Commit
 
 import GHC.Generics        (Generic)
 import Data.Aeson          ((.=), eitherDecode, object, ToJSON)
+import Data.Time           (UTCTime)
 import Database.Bloodhound
 import Network.HTTP.Client
 
@@ -95,16 +96,16 @@ setBuildStatus config indexSettings commitId commit buildStatus = USEO.updateDoc
     where updatedCommit = commit { UDC.buildStatus = buildStatus }
 
 -- Mark multiple commits as processed.
-bulkMarkProcessed :: USEC.StorageConfig -> [T.Text] -> IO (Reply)
-bulkMarkProcessed storageConfig commitsIds = USEO.bulkUpdateDocuments' storageConfig indexSettings patches
+bulkMarkProcessed :: USEC.StorageConfig -> [T.Text] -> UTCTime -> IO (Reply)
+bulkMarkProcessed storageConfig commitsIds now = USEO.bulkUpdateDocuments' storageConfig indexSettings $ patches now
 
-    where patches       = map (\commitId -> (DocId commitId, IsProcessed True)) commitsIds
+    where patches now   = map (\commitId -> (DocId commitId, IsProcessed True now)) commitsIds
           indexSettings = USEC.indexSettingsFromConfig "commit" storageConfig
 
-bulkUpdateBranches :: USEC.StorageConfig -> M.Map DocId (Maybe [UDEB.EmBranch]) -> IO (Reply)
-bulkUpdateBranches storageConfig mCommitsEmBranchesWithIds = USEO.bulkUpdateDocuments' storageConfig indexSettings patches
+bulkUpdateBranches :: USEC.StorageConfig -> M.Map DocId (Maybe [UDEB.EmBranch]) -> UTCTime -> IO (Reply)
+bulkUpdateBranches storageConfig mCommitsEmBranchesWithIds now = USEO.bulkUpdateDocuments' storageConfig indexSettings $ patches now
 
-    where patches       = M.toList $ M.map (\emBranches -> Branches emBranches) mCommitsEmBranchesWithIds
+    where patches now   = M.toList $ M.map (\emBranches -> Branches emBranches now) mCommitsEmBranchesWithIds
           indexSettings = USEC.indexSettingsFromConfig "commit" storageConfig
 
 
@@ -112,13 +113,24 @@ bulkUpdateBranches storageConfig mCommitsEmBranchesWithIds = USEO.bulkUpdateDocu
 
 -- Patches required for the Update API.
 
-data Patch = IsProcessed { isProcessed :: Bool }
-           | Branches    { branches    :: Maybe [UDEB.EmBranch] }
-             deriving (Show, Generic)
+data Patch
+    = IsProcessed
+        { isProcessed :: Bool
+        , updatedAt   :: UTCTime
+        }
+    | Branches
+        { branches    :: Maybe [UDEB.EmBranch]
+        , updatedAt   :: UTCTime
+        }
+    deriving (Generic, Show)
 
 instance ToJSON Patch where
-    toJSON (IsProcessed isProcessed) =
-        object [ "isProcessed" .= isProcessed ]
+    toJSON (IsProcessed isProcessed updatedAt) =
+        object [ "isProcessed" .= isProcessed
+               , "updatedAt"   .= updatedAt
+               ]
 
-    toJSON (Branches branches) =
-        object [ "branches" .= branches ]
+    toJSON (Branches branches updatedAt) =
+        object [ "branches"  .= branches
+               , "updatedAt" .= updatedAt
+               ]

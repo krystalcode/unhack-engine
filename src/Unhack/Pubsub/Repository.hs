@@ -125,6 +125,9 @@ clone config indexSettings repositoryId = do
 analyseAll :: USEC.StorageConfig -> USEC.StorageIndexSettings -> T.Text -> IO ()
 analyseAll storageConfig indexSettings repositoryId = do
 
+    -- The current time that will be used the 'createdAt' and 'updatedAt' fields.
+    now <- getCurrentTime
+
     -- Get the repository record.
     maybeRepository <- USEDR.get storageConfig indexSettings repositoryId
 
@@ -251,7 +254,7 @@ analyseAll storageConfig indexSettings repositoryId = do
                                                           (\acc (commitId, commit) -> M.insert commitId (UDC.branches commit) acc)
                                                           M.empty
                                                           mUpdatedCommitsWithHashes
-                        updateCommitsResponse <- USEDC.bulkUpdateBranches storageConfig mCommitsEmBranchesWithIds
+                        updateCommitsResponse <- USEDC.bulkUpdateBranches storageConfig mCommitsEmBranchesWithIds now
 
                         -- Get a list of new commits ids + existing commits ids that are not already processed. These
                         -- will be the commits that we will analyse.
@@ -418,7 +421,8 @@ analyseCommits storageConfig indexSettings repositoryId commitsIds = do
                     -}
 
                     -- Mark as processed all commits that we parsed for issues.
-                    commitsProcessedResponse <- USEDC.bulkMarkProcessed storageConfig $ map (\(commitId, commit) -> commitId) commitsWithIds
+                    let processedCommitsIds = map (\(commitId, commit) -> commitId) commitsWithIds
+                    commitsProcessedResponse <- USEDC.bulkMarkProcessed storageConfig processedCommitsIds now
 
                     -- Mark the repository as processed if the 'isProcessed' flag is currently set to 'false'. This
                     -- would normally be the case if this is the first time that we are processing the repository.
