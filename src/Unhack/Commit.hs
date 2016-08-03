@@ -25,6 +25,15 @@ import qualified Unhack.Data.EmBranch as UDEB (EmBranch)
 
 -- Public API.
 
+{-
+  @Issue(
+    "Do we need to store both branches' '_id' and 'name' fields, or just the
+    '_id' is enough?"
+    type="improvement"
+    priority="low"
+    labels="1.0.0-beta1, data, performance"
+  )
+-}
 data Commit = Commit { branches     :: Maybe [UDEB.EmBranch]
                      , buildMessage :: T.Text
                      , buildStatus  :: T.Text
