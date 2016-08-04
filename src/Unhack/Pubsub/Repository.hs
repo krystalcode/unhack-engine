@@ -544,6 +544,16 @@ updateHeads storageConfig indexSettings repositoryId = do
 
             {-
                 @Issue(
+                    "Update the projects without having to fetch the repository from the database again"
+                    type="improvement"
+                    priority="low"
+                    labels="performance"
+                )
+            -}
+            updateProjectsResponse <- updateProjects storageConfig repositoryId
+
+            {-
+                @Issue(
                     "Update branches and repository records in one query"
                     type="improvement"
                     priority="low"
@@ -560,6 +570,44 @@ updateHeads storageConfig indexSettings repositoryId = do
             return mempty
 
 
+-- Update all projects that include the given repository with the repository's
+-- latest information.
+updateProjects :: USEC.StorageConfig -> T.Text -> IO ()
+updateProjects storageConfig repositoryId = do
+
+    -- The current time that will be used for the 'createdAt' and 'updatedAt'
+    -- fields.
+    now <- getCurrentTime
+
+    maybeProjects <- USEDP.mgetActiveByRepositoryId storageConfig repositoryId
+
+    case (isNothing maybeProjects) of
+        -- Nothing to do if there are no projects that include the given repository.
+        True  -> return mempty
+
+        -- If there are projects, get the repository record and update the projects with its latest information.
+        False -> do
+          maybeRepository <- USEDR.get storageConfig (USEC.indexSettingsFromConfig "repository" storageConfig) repositoryId
+
+          case (isNothing maybeRepository) of
+
+              True  -> error $ "No repository found with id '" ++ (T.unpack repositoryId) ++ "'."
+
+              False -> do
+                  let repository   = fromJust maybeRepository
+                  let emRepository = UDEPR.fromRepository repositoryId repository
+
+                  let mProjectsWithIds = fromJust maybeProjects
+
+                  -- We can safely use fromJust because we know that there is at least one repository for these projects.
+                  let mEmRepositoriesWithProjectsIds        = M.map (\project -> fromJust $ UDP.repositories project) mProjectsWithIds
+                  let mUpdatedEmRepositoriesWithProjectsIds = M.map (\emRepositories -> Just (updateEmProjectRepository emRepository emRepositories)) mEmRepositoriesWithProjectsIds
+
+                  response <- USEDP.bulkUpdateRepositories storageConfig mUpdatedEmRepositoriesWithProjectsIds now
+
+                  return mempty
+
+
 -- Functions/types for internal use.
 
 findCommitByHash :: [UDEC.EmCommit] -> (UDEB.EmBranch, UDEIC.EmIssueCommit) -> Maybe (UDEB.EmBranch, UDEC.EmCommit)
@@ -567,3 +615,12 @@ findCommitByHash [] _ = Nothing
 findCommitByHash (commit:xs) (branch, head)
     | UDEC.hash commit == UDEIC.hash head = Just (branch, commit)
     | otherwise                           = findCommitByHash xs (branch, head)
+
+-- Given the latest version of a repository and a list of repositories, find the record in the list and update it e.g.
+-- create a list that contains the new version of the repository.
+updateEmProjectRepository :: UDEPR.EmProjectRepository -> [UDEPR.EmProjectRepository] -> [UDEPR.EmProjectRepository]
+updateEmProjectRepository updatedRepository repositories = map update repositories
+
+    where update repository
+              | UDEPR._id repository == UDEPR._id updatedRepository = updatedRepository
+              | otherwise                                           = repository
