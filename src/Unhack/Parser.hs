@@ -25,8 +25,9 @@ import Unhack.Util                 (csvToList)
 {-
   @Issue(
     "Use Text instead of String everywhere in the Parser",
-    type="task",
-    priority="normal"
+    type="improvement",
+    priority="low"
+    labels="performance"
   )
 -}
 
@@ -71,14 +72,6 @@ extractMultiValueProperty issue property
 
     where maybeCSVValue = extractProperty issue property
 
-{-
-  @Issue(
-    "Allow for different regexps per property e.g. do not allow special
-    characters in type, priority and labels etc.",
-    type="bug",
-    priority="normal"
-  )
--}
 extractProperty :: String -> String -> Maybe T.Text
 extractProperty issue property = if value == "" then Nothing else Just (T.pack value)
                 where pattern = property ++ "=\"([^\"]+)\""
@@ -89,7 +82,7 @@ extractTitle issue = if T.null validTitle then T.pack issue else validTitle
                      where maybeTitleWithKey = extractProperty issue "title"
                            {-
                              @Issue(
-                               "Reuse extractProperty when it accepts a pattern as an argument",
+                               "Reuse extractProperty by passing pattern as an argument",
                                type="improvement",
                                priority="low",
                                labels="refactoring"

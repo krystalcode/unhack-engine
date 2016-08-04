@@ -21,7 +21,7 @@ import qualified Data.Text as T (Text)
         "Check if we need to set the 'norms' and 'store' properties"
         type="improvement"
         priority="normal"
-        labels="1.0.0-beta1, performance"
+        labels="1.0.0-beta1, data, performance"
     )
 -}
 issueMapping = MappingName "issue"

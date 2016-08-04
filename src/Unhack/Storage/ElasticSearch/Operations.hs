@@ -53,7 +53,7 @@ import qualified Unhack.Storage.ElasticSearch.Config as USC
     @Issue(
         "Review the changes for automatic ID generation and submit a pull request"
         type="task"
-        priority="normal"
+        priority="low"
         labels="contributions"
     )
 -}
@@ -146,6 +146,7 @@ mgetDocuments' config settings@(USC.StorageIndexSettings key _ _ _) docsIds = wi
         "Review default index document settings"
         type="improvement"
         priority="low"
+        labels="1.0.0-beta1"
     )
 -}
 indexDocument' :: (ToJSON doc) => USC.StorageConfig -> USC.StorageIndexSettings -> doc -> IO (Reply)

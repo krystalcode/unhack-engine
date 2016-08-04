@@ -27,6 +27,7 @@ import qualified Data.Text as T (pack, unpack, Text)
         "Implement error handling for the lazyProcess function as well"
         type="bug"
         priority="normal"
+        label="error management"
     )
 -}
 
@@ -58,6 +59,7 @@ strictProcess command directory = handle (\e -> handleException e) $ do
         "Capture and return the exception message as well"
         type="improvement"
         priority="low"
+        labels="error management"
       )
     -}
     if exitCode == ExitSuccess
@@ -73,6 +75,7 @@ strictProcess command directory = handle (\e -> handleException e) $ do
         "Differentiate between IOException and other exceptions"
         type="improvement"
         priority="low"
+        labels="error management"
       )
     -}
     where handleException (SomeException e) = return $ Left (ExitFailure 0)

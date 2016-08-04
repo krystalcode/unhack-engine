@@ -58,13 +58,7 @@ runPubSub cmd = do
                   "Log an error message for unrecognised channels"
                   type="bug"
                   priority="low"
-                  labels="log management"
-              )
-              @Issue(
-                  "Is there really any case where we would received messages on unrecognised channels?"
-                  type="investigation"
-                  priority="low"
-                  labels="clean up"
+                  labels="error management, log management"
               )
           -}
           False -> putStrLn $ "The Redis PubSub channel '" ++ (BS.unpack channel) ++ "' is not recognised."

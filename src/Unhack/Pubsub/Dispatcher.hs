@@ -23,12 +23,6 @@ import qualified Unhack.Storage.ElasticSearch.Config as USEC (indexSettingsFromC
 -- Dispatch an incoming pubsub message to the appropriate handling function.
 {-
     @Issue(
-        "Log message when the action is completed instead of printing on screen"
-        type="improvement"
-        priority="low"
-        labels="log management"
-    )
-    @Issue(
         "Support json-encoded pubsub messages"
         type="bug"
         priority="low"
@@ -47,14 +41,6 @@ dispatch config message = do
             let repositoryId = T.pack (BS.unpack $ messageParts !! 1)
             print $ "Dispatching message of type '" ++ action ++ "'"
             UPR.clone config (USEC.indexSettingsFromConfig "repository" config) repositoryId
-            {-
-                @Issue(
-                    "Execute the remaining tasks according to the flow"
-                    type="bug"
-                    priority="normal"
-                    labels="release"
-                )
-            -}
             print $ "Action of type '" ++ action ++ "' performed"
 
         -- Request to analyse all commits for the active branches.

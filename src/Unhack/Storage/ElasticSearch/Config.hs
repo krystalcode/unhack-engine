@@ -52,7 +52,7 @@ indexSettingsFromConfig indexKey config = matchAsList !! 0
 
 {-
   @Issue(
-    "Remove the 'type' option and provide default for other options making them
+    "Remove the 'type' option and provide defaults for other options making them
     optional"
     type="improvement"
     priority="low"

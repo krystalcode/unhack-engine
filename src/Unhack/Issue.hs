@@ -27,13 +27,6 @@ import Unhack.Data.IssueProperties    (IssueProperties)
 data Issue = Issue
     { commit     :: EmIssueCommit
     , createdAt  :: UTCTime
-    {-
-      @Issue(
-        "Support path hierarchy in file property",
-        type="improvement",
-        priority="high"
-      )
-    -}
     , file       :: T.Text
     , properties :: IssueProperties
     , repository :: EmbeddedRepository

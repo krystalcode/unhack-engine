@@ -67,14 +67,6 @@ import qualified Unhack.Storage.ElasticSearch.Operations      as USEO  (bulkInde
 -}
 
 -- Pubsub task for cloning a repository.
-{-
-    @Issue(
-        "Refactor fetching and extracting a document into a separate function"
-        type="improvement"
-        priority="normal"
-        labels="refactoring"
-    )
--}
 clone :: USEC.StorageConfig -> USEC.StorageIndexSettings -> T.Text -> IO ()
 clone config indexSettings repositoryId = do
 
@@ -109,6 +101,7 @@ clone config indexSettings repositoryId = do
                 user"
                 type="bug"
                 priority="low"
+                labels="error management"
               )
             -}
             cloneResult <- UGF.clone vendor owner repositoryName
@@ -185,21 +178,20 @@ analyseAll storageConfig indexSettings repositoryId = do
                                 different per repository"
                                 type="improvement"
                                 priority="low"
-                                labels="performance, release"
+                                labels="performance"
                             )
                             @Issue(
                                 "Log number of commits analysed by the 'analyse_recent' task in order to find a safe number of
                                 recent commits per repository"
                                 type="improvement"
                                 priority="low"
-                                labels="analytics, release"
+                                labels="analytics"
                             )
                             @Issue(
                                 "Consider detecting commits not processed via cron job, in case they escape the
                                 'analyse_recent' task"
                                 type="bug"
                                 priority="low"
-                                labels="release"
                             )
                         -}
                         mCommitsBranchNamesWithHashes <- UGCom.list directory branchesToAnalyseNames
@@ -299,7 +291,7 @@ analyseAll storageConfig indexSettings repositoryId = do
                         {- @Issue( "Handle errors"
                                    type="bug"
                                    priority="low"
-                                   labels="error management, log management" )
+                                   labels="error management" )
                            @Issue( "Investigate a solution for better distribution of worker resources between repositories
                                    that run on the same engine instance"
                                    type="bug"
@@ -309,15 +301,6 @@ analyseAll storageConfig indexSettings repositoryId = do
 
                         -- Send a pubsub message to update the head commits for all active branches, and for the repository
                         -- itself as well.
-                        {-
-                          @Issue(
-                            "The updated records for the head commits are not available to search when this task is
-                            executed"
-                            type="bug"
-                            priority="normal"
-                            labels="release"
-                          )
-                        -}
                         pubsubResponse <- UPP.publish [(repositoryId, T.intercalate ":" ["repositories_update_heads", repositoryId])]
 
                         return mempty
@@ -396,14 +379,14 @@ analyseCommits storageConfig indexSettings repositoryId commitsIds = do
                 )
                 @Issue(
                     "Support constructing a build message together with the build status"
-                    type="bug"
-                    priority="high"
+                    type="improvement"
+                    priority="low"
                 )
                 @Issue(
                     "Support storing log messages that would be used to display in the web UI any errors
                     that occurred during the build"
                     type="feature"
-                    priority="normal"
+                    priority="low"
                 )
             -}
             let flatIssuesProperties = map (\ (commit, filesIssuesProperties)
@@ -445,7 +428,7 @@ analyseCommits storageConfig indexSettings repositoryId commitsIds = do
                             where properly stored"
                             type="bug"
                             priority="normal"
-                            labels="log management"
+                            labels="error management"
                         )
                     -}
 
@@ -483,6 +466,15 @@ updateHeads storageConfig indexSettings repositoryId = do
     -- If a head commit was analysed immediately before running this task, it
     -- may not be immediately available to search due to Elastic Search's near
     -- real time feature. Delay 1s to make sure that the commit will be found.
+    {-
+      @Issue(
+        "Consider passing on calling this task with the commits as arguments, or
+        postponing execution for 1s and proceed with processing other tasks"
+        type="improvement"
+        priority="low"
+        labels="performance"
+      )
+    -}
     threadDelay 1000
 
     -- Get the repository record.
@@ -504,7 +496,7 @@ updateHeads storageConfig indexSettings repositoryId = do
             -- (absence of 'master' branch) an analysis wouldn't be triggered in the first place.
             {-
               @Issue(
-                "Log a message instead of throwing an error"
+                "Log a message instead of throwing an error when there are no active branches"
                 type="bug"
                 priority="low"
                 labels="error management, log management"
@@ -529,14 +521,8 @@ updateHeads storageConfig indexSettings repositoryId = do
             -- that will be embedded in the branch/repository records.
             {-
                 @Issue(
-                    "Restrict query by repository id filtering"
-                    type="improvement"
-                    priority="low"
-                    labels="performance"
-                )
-                @Issue(
-                    "Log an error if a record is not found for the git commit
-                    instead of letting the program fail"
+                    "Log an error if a record is not found for one or more git
+                    commits instead of letting the program fail"
                     type="bug"
                     priority="low"
                     labels="error management"
@@ -556,6 +542,15 @@ updateHeads storageConfig indexSettings repositoryId = do
             let maybeCommitsWithIds    = map (\hit -> (hitDocId hit, hitSource hit)) resultHits
             let justCommitsWithIds     = filter (\(commitId, commit) -> isJust commit) maybeCommitsWithIds
             let commitsWithIds         = map (\(commitId, commit) -> (commitId, fromJust commit)) justCommitsWithIds
+
+            {-
+                @Issue(
+                    "Restrict commits to repository when making the ES query instead of filtering the results"
+                    type="improvement"
+                    priority="low"
+                    labels="performance"
+                )
+            -}
             let filteredCommitsWithIds = filter (\(commitId, commit) -> repositoryId == UDC.repositoryId commit) commitsWithIds
 
             let emCommits                  = UDEC.fromCommits filteredCommitsWithIds
