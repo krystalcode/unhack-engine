@@ -1,8 +1,7 @@
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
 module Unhack.Git.Branch
-       ( branchesList
-       , originList
+       ( originList
        ) where
 
 
@@ -37,22 +36,3 @@ originList directory = do
     let justWithoutPrefixes  = filter isJust maybeWithoutPrefixes
 
     return $ map fromJust justWithoutPrefixes
-
--- Gets the list of branches as text by executing the "git branch" command. The
--- branches are those that local git knows about and may not be up-to-date.
-{-
-    @Issue(
-        "Remove the origin/HEAD -> origin/master from the list of branches"
-        type="bug"
-        priority="low"
-    )
--}
-branchesList :: FilePath -> IO ([T.Text])
-branchesList directory = do
-    originBranchesText <- lazyProcess command directory
-    let originBranchesList = textToList originBranchesText
-    return $ removeOrigins originBranchesList
-    where command = "git branch -r --no-color"
-          textToList branches = T.lines $ T.filter (/= ' ') branches
-          removeOrigins branches = map removeOrigin branches
-          removeOrigin (T.stripPrefix "origin/" -> Just branchName) = branchName
