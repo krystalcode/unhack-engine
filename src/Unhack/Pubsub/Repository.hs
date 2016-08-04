@@ -118,6 +118,14 @@ clone config indexSettings repositoryId = do
             print $ concat ["Cloned repository '", (T.unpack $ UDR.name repository), "'"]
 
 -- Analyse all commits for the active branches.
+{-
+  @Issue(
+    "Analyse the head commits and update records accordingly before proceeding with the rest"
+    type="improvement"
+    priority="low"
+    labels="ux"
+  )
+-}
 analyseAll :: USEC.StorageConfig -> USEC.StorageIndexSettings -> T.Text -> IO ()
 analyseAll storageConfig indexSettings repositoryId = do
 
