@@ -509,7 +509,7 @@ updateHeads storageConfig indexSettings repositoryId = do
                     labels="error management"
                 )
             -}
-            let hashes = map (\(branch, head) -> UDEIC.hash head) branchesWithHeads
+            let hashes = map (\(branch, head) -> UDGC.hash head) branchesWithHeads
             let terms  = TermsQuery "hash" $ fromList hashes
             let query  = ConstantScoreFilterQuery terms (Boost 1)
 
