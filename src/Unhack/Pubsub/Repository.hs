@@ -400,11 +400,6 @@ analyseCommits storageConfig indexSettings repositoryId commitsIds = do
                     type="feature"
                     priority="normal"
                 )
-                @Issue(
-                    "Update the branch and the repository with the head commit and build results"
-                    type="bug"
-                    priority="high"
-                )
             -}
             let flatIssuesProperties = map (\ (commit, filesIssuesProperties)
                                               -> (commit, concat $ map (\ (file, fileIssuesProperties)
