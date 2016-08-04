@@ -11,6 +11,7 @@ module Unhack.Pubsub.Repository
 
 -- External dependencies.
 
+import Control.Concurrent  (threadDelay)
 import Control.Monad       (when)
 import Data.Aeson          (eitherDecode)
 import Data.List.NonEmpty  (fromList)
@@ -446,6 +447,11 @@ updateHeads storageConfig indexSettings repositoryId = do
     -- fields.
     now <- getCurrentTime
 
+    -- If a head commit was analysed immediately before running this task, it
+    -- may not be immediately available to search due to Elastic Search's near
+    -- real time feature. Delay 1s to make sure that the commit will be found.
+    threadDelay 1000
+
     -- Get the repository record.
     maybeRepository <- USEDR.get storageConfig indexSettings repositoryId
 
@@ -483,6 +489,8 @@ updateHeads storageConfig indexSettings repositoryId = do
             let branchesWithMaybeHeads  = zipWith (\branch maybeHead -> (branch, maybeHead)) activeBranches maybeHeads
             let branchesWithMaybeHeads' = filter (\(branch, maybeHead) -> isJust maybeHead) branchesWithMaybeHeads
             let branchesWithHeads       = map (\(branch, maybeHead) -> (branch, fromJust maybeHead)) branchesWithMaybeHeads'
+
+            print branchesWithHeads
 
             -- Get the commit records for the heads from Elastic Search since we need their ids and other information
             -- that will be embedded in the branch/repository records.
