@@ -424,6 +424,14 @@ analyseCommits storageConfig indexSettings repositoryId commitsIds = do
                     -}
 
                     -- Mark as processed all commits that we parsed for issues.
+                    {-
+                        @Issue(
+                            "Consider marking commits as processed when storing the build status"
+                            type="improvement"
+                            priority="low"
+                            labels="performance"
+                        )
+                    -}
                     let processedCommitsIds = map (\(commitId, commit) -> commitId) commitsWithIds
                     commitsProcessedResponse <- USEDC.bulkMarkProcessed storageConfig processedCommitsIds now
 
