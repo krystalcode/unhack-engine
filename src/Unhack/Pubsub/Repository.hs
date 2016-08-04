@@ -534,7 +534,9 @@ updateHeads storageConfig indexSettings repositoryId = do
             updateBranchesResponse <- USEDB.updateHeadCommits storageConfig branchesIdsWithEmCommits now
 
             -- Update the head commit for the repository as well.
-            let defaultBranch = UDR.defaultBranch repository
+            -- We can safely use fromJust on the default branch since we wouldn't be here if there wasn't any default
+            -- branch defined for the repository. A little bug-prone though ...
+            let defaultBranch = fromJust $ UDR.defaultBranch repository
             let defaultBranchIdWithEmCommit = filter (\(branchId, commit) -> branchId == UDEB._id defaultBranch) branchesIdsWithEmCommits
             let repositoryIdWithEmCommit    = [(repositoryId, snd $ defaultBranchIdWithEmCommit !! 0)]
 
