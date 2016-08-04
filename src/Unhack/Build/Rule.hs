@@ -19,7 +19,6 @@ import qualified Unhack.Data.EmIssueCommit                as UDEIC (EmIssueCommi
 import qualified Unhack.Config                            as UC    (Action(..), Annotation(..), Build(..), Config(..), Rule(..))
 import qualified Unhack.Data.IssueProperties              as UDIP  (IssueProperties)
 import qualified Unhack.Storage.ElasticSearch.Config      as USEC  (indexSettingsFromConfig, StorageConfig)
-import qualified Unhack.Storage.ElasticSearch.Data.Commit as USEDC (setBuildStatus)
 
 
 -- Public API.
