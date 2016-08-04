@@ -215,7 +215,7 @@ analyseAll storageConfig indexSettings repositoryId = do
                         -- the branches for existing records, and to create a map with the commits that are new.
                         let hashes = M.keys mCommitsBranchNamesWithHashes
                         let terms  = TermsQuery "hash" $ fromList hashes
-                        let query  = ConstantScoreFilterQuery terms (Boost 1)
+                        let query  = ConstantScoreQuery terms (Boost 1)
 
                         commitsResponse <- USEO.search' storageConfig (USEC.indexSettingsFromConfig "commit" storageConfig) query (USEO.searchDefaultParams { USEO.spSize = Size (length hashes) })
 
