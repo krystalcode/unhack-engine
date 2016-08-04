@@ -372,11 +372,18 @@ analyseCommits storageConfig indexSettings repositoryId commitsIds = do
             -- Get the contents of all files to be parsed.
             contents <- mapM (UGCon.commitContents directory) files
 
-            -- Get all issues for the files' contents.
-            let issues = map UP.parseCommitContents contents
+            -- Get the properties for all issue for the files' contents.
+            let issuesProperties = map UP.parseCommitContents contents
 
             -- Apply rules define in the repository configuration per commit.
             {-
+                @Issue(
+                  "Calculate and store the build status after we have the Issue records to avoid unnecessary additional
+                  handling of IssueProperties records"
+                  type="improvement"
+                  priority="low"
+                  labels="performance"
+                )
                 @Issue(
                     "Support a default configuration per project/repository provided by user through the web UI"
                     type="feature"
@@ -399,20 +406,39 @@ analyseCommits storageConfig indexSettings repositoryId commitsIds = do
                     priority="high"
                 )
             -}
-            let issuesWithRepoConfig = zipWith (\repoConfig (commit, commitIssues) -> (commit, repoConfig, commitIssues)) repoConfigs issues
-            rulesResult <- mapM_ (\(commit, repoConfig, commitIssues) -> UBR.apply storageConfig repoConfig commit commitIssues now) issuesWithRepoConfig
+            let flatIssuesProperties = map (\ (commit, filesIssuesProperties)
+                                              -> (commit, concat $ map (\ (file, fileIssuesProperties)
+                                                                          -> fileIssuesProperties)
+                                                                       filesIssuesProperties))
+                                           issuesProperties
+
+            let issuesPropertiesWithRepoConfig = zipWith (\ repoConfig (commit, commitIssuesProperties)
+                                                            -> (commit, repoConfig, commitIssuesProperties))
+                                                         repoConfigs flatIssuesProperties
+            rulesResult <- mapM_ (\ (commit, repoConfig, commitIssuesProperties)
+                                    -> UBR.apply storageConfig repoConfig commit commitIssuesProperties now)
+                                 issuesPropertiesWithRepoConfig
 
             -- If there are issues found, send them to Elastic Search.
-            case (length issues) of
+            case (length issuesProperties) of
 
                 0 -> print "No issues found on any of the commits for this branch."
 
                 _ -> do
-                    let emRepository  = UDER.emptyEmbeddedRepository { UDER._id = repositoryId, UDER.url = (UDR.url repository) }
-                    let flatIssues    = concat $ map (\(commit, commitIssues) -> commitIssues) issues
-                    let projectIssues = UI.bulkSetRepository flatIssues emRepository
-                    response <- USEO.bulkIndexIssues storageConfig (USEC.indexSettingsFromConfig "issue" storageConfig) projectIssues
-                    --print "Stored issues ..."
+                    -- Create a flat list of all Issue records and send them to Elastic Search.
+                    let emRepository = UDER.emptyEmbeddedRepository { UDER._id = repositoryId, UDER.name = (UDR.name repository) }
+                    let issues = concat $ map (\ (commit, fileWithIssuesProperties)
+                                                 -> concat $ map (\ (file, fileIssuesProperties)
+                                                                    -> map (\ properties
+                                                                              -> UDI.makeIssue commit
+                                                                                               file
+                                                                                               properties
+                                                                                               emRepository
+                                                                                               now)
+                                                                           fileIssuesProperties)
+                                                                 fileWithIssuesProperties)
+                                              issuesProperties
+                    response <- USEO.bulkIndexIssues storageConfig (USEC.indexSettingsFromConfig "issue" storageConfig) issues
                     {-
                         @Issue(
                             "Go through the response and log an error if not all Issues
