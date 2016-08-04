@@ -12,7 +12,6 @@ import System.Environment (getArgs)
 import Unhack.Cmd.Indexes
 import Unhack.Cmd.Modes
 import Unhack.Cmd.PubSub
-import Unhack.Cmd.Test
 
 
 -- Program's main entry.
@@ -27,7 +26,6 @@ main = do
     case cmd of
         CmdIndexes{} -> runIndexes cmd
         CmdPubSub{}  -> runPubSub cmd
-        CmdTest{}    -> runTest cmd
 
 
 -- Issues.
