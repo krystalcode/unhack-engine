@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, RecordWildCards, OverloadedStrings #-}
 
 module Unhack.Commit
        ( bulkSetRepositoryId
@@ -19,6 +19,8 @@ import GHC.Generics     (Generic)
 import qualified Data.Text as T (Text)
 
 -- Internal dependencies.
+
+import Unhack.Util (omitNulls)
 
 import qualified Unhack.Data.EmBranch as UDEB (EmBranch)
 
@@ -81,14 +83,14 @@ instance FromJSON Commit where
     parseJSON invalid    = typeMismatch "Commit" invalid
 
 instance ToJSON Commit where
-    toJSON (Commit branches buildMessage buildStatus createdAt hash isProcessed repositoryId time updatedAt) =
-        object [ "branches"     .= branches
-               , "buildMessage" .= buildMessage
-               , "buildStatus"  .= buildStatus
-               , "createdAt"    .= createdAt
-               , "hash"         .= hash
-               , "isProcessed"  .= isProcessed
-               , "repositoryId" .= repositoryId
-               , "time"         .= time
-               , "updatedAt"    .= updatedAt
-               ]
+    toJSON Commit {..} = omitNulls
+        [ "branches"     .= branches
+        , "buildMessage" .= buildMessage
+        , "buildStatus"  .= buildStatus
+        , "createdAt"    .= createdAt
+        , "hash"         .= hash
+        , "isProcessed"  .= isProcessed
+        , "repositoryId" .= repositoryId
+        , "time"         .= time
+        , "updatedAt"    .= updatedAt
+        ]

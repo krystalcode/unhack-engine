@@ -11,6 +11,7 @@ module Unhack.Pubsub.Repository
 
 -- External dependencies.
 
+import Control.Monad       (when)
 import Data.Aeson          (eitherDecode)
 import Data.List.NonEmpty  (fromList)
 import Data.Maybe          (fromJust, isJust, isNothing)
@@ -138,14 +139,16 @@ analyseAll storageConfig indexSettings repositoryId = do
         False -> do
             let repository          = fromJust maybeRepository
             let directory           = UGL.directory repository
-            let activeBranches      = UDR.activeBranches repository
-            let activeBranchesNames = map UDEB.name activeBranches
+            let maybeActiveBranches = UDR.activeBranches repository
 
-            case (length activeBranches) of
+            case isNothing maybeActiveBranches of
 
-              0 -> print "Trying to analyse a repository that does not have any active branches."
+              True -> print "Trying to analyse a repository that does not have any active branches."
 
-              _ -> do
+              False -> do
+
+                  let activeBranches      = fromJust maybeActiveBranches
+                  let activeBranchesNames = map UDEB.name activeBranches
 
                   -- We first make a check that the branches set to be analysed actually exist. The branches that will
                   -- actually be analysed are therefore the intersection of all repository branches with the branches
@@ -454,7 +457,23 @@ updateHeads storageConfig indexSettings repositoryId = do
 
             let repository          = fromJust maybeRepository
             let directory           = UGL.directory repository
-            let activeBranches      = UDR.activeBranches repository
+            let maybeActiveBranches = UDR.activeBranches repository
+
+            -- We cannot update the heads of neither the repository nor its branches, if we don't have any active
+            -- branches. Nothing to do. We shouldn't normally be here in such case, because the user cannot remove all
+            -- active branches from the interface, and if the repository does not have active branches to start with
+            -- (absence of 'master' branch) an analysis wouldn't be triggered in the first place.
+            {-
+              @Issue(
+                "Log a message instead of throwing an error"
+                type="bug"
+                priority="low"
+                labels="error management, log management"
+              )
+            -}
+            when (isNothing maybeActiveBranches) $ error "Trying to update the heads for a repository that does not have any active branches."
+
+            let activeBranches      = fromJust maybeActiveBranches
             let activeBranchesNames = map UDEB.name activeBranches
 
             -- Get the heads for the active branches, filtering out any Nothing results. Nothing results should not

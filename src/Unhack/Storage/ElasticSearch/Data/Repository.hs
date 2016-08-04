@@ -75,8 +75,25 @@ updateHeadCommits storageConfig repositoriesIdsWithEmCommits now = USEO.bulkUpda
 
 -- Patches required for the Update API.
 
-data Patch = HeadCommit { headCommit :: UDEC.EmCommit, updatedAt :: UTCTime }
-             deriving (Show, Generic)
+data Patch
+    = HeadCommit
+        -- We don't use Maybe in the 'headCommit' field, unlike the corresponding
+        -- Repository record field. When a repository is created and it hasn't
+        -- been analysed yet, there is no value to store in the 'headCommit'
+        -- field of the repository yet. When a repository's head is updated,
+        -- however, we would always have a head commit, otherwise we wouldn't
+        -- try to update it in the first place.
+        {-
+          @Issue(
+            "Consider what happens when the user switches the default branch to
+            a branch that does not have any commits"
+            type="bug"
+            priority="low"
+          )
+        -}
+        { headCommit :: UDEC.EmCommit
+        , updatedAt :: UTCTime }
+    deriving (Show, Generic)
 
 instance ToJSON Patch where
     toJSON (HeadCommit headCommit updatedAt) =

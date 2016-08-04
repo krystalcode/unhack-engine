@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, RecordWildCards, OverloadedStrings #-}
 
 module Unhack.Data.Branch
        ( bulkSetRepositoryId
@@ -20,6 +20,7 @@ import qualified Data.Text as T (Text)
 -- Internal dependencies.
 
 import Unhack.Data.EmCommit (EmCommit)
+import Unhack.Util          (omitNulls)
 
 
 -- Public API.
@@ -49,16 +50,11 @@ instance FromJSON Branch where
     parseJSON invalid    = typeMismatch "Branch" invalid
 
 instance ToJSON Branch where
-    toJSON (Branch createdAt
-                   headCommit
-                   isActive name
-                   repositoryId
-                   updatedAt
-           ) =
-        object [ "createdAt"    .= createdAt
-               , "headCommit"   .= headCommit
-               , "isActive"     .= isActive
-               , "name"         .= name
-               , "repositoryId" .= repositoryId
-               , "updatedAt"    .= updatedAt
-               ]
+    toJSON Branch {..} = omitNulls
+        [ "createdAt"    .= createdAt
+        , "headCommit"   .= headCommit
+        , "isActive"     .= isActive
+        , "name"         .= name
+        , "repositoryId" .= repositoryId
+        , "updatedAt"    .= updatedAt
+        ]

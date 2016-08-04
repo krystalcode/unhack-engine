@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, RecordWildCards, OverloadedStrings #-}
 
 module Unhack.Data.Project
        ( combineBuilds
@@ -24,6 +24,7 @@ import qualified Data.Text as T (Text)
 -- Internal dependences.
 
 import Unhack.Types (EntityType)
+import Unhack.Util  (omitNulls)
 
 import qualified Unhack.Data.EmCommit            as UDEC  (EmCommit(..))
 import qualified Unhack.Data.EmProjectRepository as UDEPR (EmProjectRepository(..))
@@ -86,24 +87,16 @@ instance FromJSON Project where
     parseJSON invalid    = typeMismatch "Project" invalid
 
 instance ToJSON Project where
-    toJSON (Project build
-                    createdAt
-                    isDeleted
-                    name
-                    ownerEntityId
-                    ownerEntityType
-                    repositories
-                    updatedAt
-           ) =
-        object [ "build"           .= build
-               , "createdAt"       .= createdAt
-               , "isDeleted"       .= isDeleted
-               , "name"            .= name
-               , "ownerEntityId"   .= ownerEntityId
-               , "ownerEntityType" .= ownerEntityType
-               , "repositories"    .= repositories
-               , "updatedAt"       .= updatedAt
-               ]
+    toJSON Project {..} = omitNulls
+        [ "build"           .= build
+        , "createdAt"       .= createdAt
+        , "isDeleted"       .= isDeleted
+        , "name"            .= name
+        , "ownerEntityId"   .= ownerEntityId
+        , "ownerEntityType" .= ownerEntityType
+        , "repositories"    .= repositories
+        , "updatedAt"       .= updatedAt
+        ]
 
 instance FromJSON Build where
     parseJSON (Object v) =
@@ -112,10 +105,10 @@ instance FromJSON Build where
     parseJSON invalid    = typeMismatch "Build" invalid
 
 instance ToJSON Build where
-    toJSON (Build message status) =
-        object [ "message" .= message
-               , "status"  .= status
-               ]
+    toJSON Build {..} = omitNulls
+        [ "message" .= message
+        , "status"  .= status
+        ]
 
 passingBuild = Build
     { message = Nothing

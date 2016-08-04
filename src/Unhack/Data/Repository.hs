@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, RecordWildCards, OverloadedStrings #-}
 
 module Unhack.Data.Repository
        ( Repository(..)
@@ -20,6 +20,7 @@ import qualified Data.Text as T (Text)
 -- Internal dependences.
 
 import Unhack.Types (EntityType)
+import Unhack.Util  (omitNulls)
 
 import Unhack.Data.EmBranch (EmBranch)
 import Unhack.Data.EmCommit (EmCommit)
@@ -27,15 +28,8 @@ import Unhack.Data.EmCommit (EmCommit)
 
 -- Public API.
 
-{-
-  @Issue(
-    "Consider using Maybe in non-mandatory properties"
-    type="bug"
-    priority="normal"
-  )
--}
 data Repository = Repository
-    { activeBranches      :: [EmBranch]
+    { activeBranches      :: Maybe [EmBranch]
     , createdAt           :: UTCTime
     , defaultBranch       :: Maybe EmBranch
     , headCommit          :: Maybe EmCommit
@@ -65,7 +59,7 @@ data Repository = Repository
 
 instance FromJSON Repository where
     parseJSON (Object v) =
-        Repository <$> v .:? "activeBranches"      .!= []
+        Repository <$> v .:? "activeBranches"      .!= Nothing
                    <*> v .:  "createdAt"
                    <*> v .:? "defaultBranch"       .!= Nothing
                    <*> v .:? "headCommit"          .!= Nothing
@@ -91,50 +85,28 @@ instance FromJSON Repository where
     parseJSON invalid    = typeMismatch "Repository" invalid
 
 instance ToJSON Repository where
-    toJSON (Repository activeBranches
-                       createdAt
-                       defaultBranch
-                       headCommit
-                       isAccessible
-                       isActive
-                       isDeleted
-                       isPrivate
-                       isProcessed
-                       isQueuedToBeDeleted
-                       language
-                       name
-                       ownerEntityId
-                       ownerEntityType
-                       picture
-                       previousUrls
-                       _type
-                       updatedAt
-                       url
-                       vendor
-                       vendorId
-                       vendorName
-                       vendorUsername
-           ) =
-        object [ "activeBranches"      .= activeBranches
-               , "createdAt"           .= createdAt
-               , "defaultBranch"       .= defaultBranch
-               , "headCommit"          .= headCommit
-               , "isAccessible"        .= isAccessible
-               , "isActive"            .= isActive
-               , "isDeleted"           .= isDeleted
-               , "isPrivate"           .= isPrivate
-               , "isProcessed"         .= isProcessed
-               , "isQueuedToBeDeleted" .= isQueuedToBeDeleted
-               , "language"            .= language
-               , "name"                .= name
-               , "ownerEntityId"       .= ownerEntityId
-               , "ownerEntityType"     .= ownerEntityType
-               , "picture"             .= picture
-               , "previousUrls"        .= previousUrls
-               , "type"                .= _type
-               , "updatedAt"           .= updatedAt
-               , "url"                 .= url
-               , "vendor"              .= vendor
-               , "vendorId"            .= vendorId
-               , "vendorName"          .= vendorName
-               , "vendorUsername"      .= vendorUsername ]
+    toJSON Repository {..} = omitNulls
+        [ "activeBranches"      .= activeBranches
+        , "createdAt"           .= createdAt
+        , "defaultBranch"       .= defaultBranch
+        , "headCommit"          .= headCommit
+        , "isAccessible"        .= isAccessible
+        , "isActive"            .= isActive
+        , "isDeleted"           .= isDeleted
+        , "isPrivate"           .= isPrivate
+        , "isProcessed"         .= isProcessed
+        , "isQueuedToBeDeleted" .= isQueuedToBeDeleted
+        , "language"            .= language
+        , "name"                .= name
+        , "ownerEntityId"       .= ownerEntityId
+        , "ownerEntityType"     .= ownerEntityType
+        , "picture"             .= picture
+        , "previousUrls"        .= previousUrls
+        , "type"                .= _type
+        , "updatedAt"           .= updatedAt
+        , "url"                 .= url
+        , "vendor"              .= vendor
+        , "vendorId"            .= vendorId
+        , "vendorName"          .= vendorName
+        , "vendorUsername"      .= vendorUsername
+        ]
