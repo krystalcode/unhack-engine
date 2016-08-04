@@ -610,11 +610,11 @@ updateProjects storageConfig repositoryId = do
 
 -- Functions/types for internal use.
 
-findCommitByHash :: [UDEC.EmCommit] -> (UDEB.EmBranch, UDEIC.EmIssueCommit) -> Maybe (UDEB.EmBranch, UDEC.EmCommit)
+findCommitByHash :: [UDEC.EmCommit] -> (UDEB.EmBranch, UDGC.GitCommit) -> Maybe (UDEB.EmBranch, UDEC.EmCommit)
 findCommitByHash [] _ = Nothing
 findCommitByHash (commit:xs) (branch, head)
-    | UDEC.hash commit == UDEIC.hash head = Just (branch, commit)
-    | otherwise                           = findCommitByHash xs (branch, head)
+    | UDEC.hash commit == UDGC.hash head = Just (branch, commit)
+    | otherwise                          = findCommitByHash xs (branch, head)
 
 -- Given the latest version of a repository and a list of repositories, find the record in the list and update it e.g.
 -- create a list that contains the new version of the repository.
