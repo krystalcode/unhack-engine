@@ -511,7 +511,7 @@ updateHeads storageConfig indexSettings repositoryId = do
             -}
             let hashes = map (\(branch, head) -> UDGC.hash head) branchesWithHeads
             let terms  = TermsQuery "hash" $ fromList hashes
-            let query  = ConstantScoreFilterQuery terms (Boost 1)
+            let query  = ConstantScoreQuery terms (Boost 1)
 
             commitsResponse <- USEO.search' storageConfig (USEC.indexSettingsFromConfig "commit" storageConfig) query USEO.searchDefaultParams
 
