@@ -47,7 +47,6 @@ bulkIndex :: USEC.StorageConfig -> [UDC.Commit] -> IO ([T.Text])
 bulkIndex _ [] = return []
 bulkIndex storageConfig commits = do
     bulkEsResult <- USEO.bulkIndexDocuments' storageConfig indexSettings commits
-    print bulkEsResult
 
     let body             = responseBody bulkEsResult
     let eitherResult     = eitherDecode body :: Either String BulkEsResult
