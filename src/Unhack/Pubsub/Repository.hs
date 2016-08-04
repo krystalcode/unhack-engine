@@ -93,12 +93,6 @@ clone config indexSettings repositoryId = do
             -- Clone the repository.
             {-
               @Issue(
-                "Check if the repository is already cloned first and do a fetch
-                instead"
-                type="bug"
-                priority="low"
-              )
-              @Issue(
                 "Catch and log errors so that the program does not fail"
                 type="bug"
                 priority="low"
