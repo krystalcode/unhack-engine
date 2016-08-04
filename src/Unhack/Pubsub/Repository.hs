@@ -501,6 +501,13 @@ updateHeads storageConfig indexSettings repositoryId = do
                     priority="low"
                     labels="performance"
                 )
+                @Issue(
+                    "Log an error if a record is not found for the git commit
+                    instead of letting the program fail"
+                    type="bug"
+                    priority="low"
+                    labels="error management"
+                )
             -}
             let hashes = map (\(branch, head) -> UDEIC.hash head) branchesWithHeads
             let terms  = TermsQuery "hash" $ fromList hashes
