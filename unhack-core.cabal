@@ -31,7 +31,6 @@ library
                      , Unhack.Cmd.Modes
                      , Unhack.Cmd.PubSub
                      , Unhack.Git.Commit
-                     , Unhack.Git.Config
                      , Unhack.Git.Contents
                      , Unhack.Git.Branch
                      , Unhack.Git.Fetch
