@@ -45,6 +45,14 @@ data Repository = Repository
     , ownerEntityType     :: EntityType
     , picture             :: Maybe T.Text
     , previousUrls        :: Maybe [T.Text]
+    {-
+      @Issue(
+        "Rename property from _type to type'"
+        type="improvement"
+        priority="low"
+        labels="naming conventions"
+      )
+    -}
     , _type               :: T.Text
     , updatedAt           :: UTCTime
     , url                 :: T.Text
