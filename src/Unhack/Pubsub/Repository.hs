@@ -242,10 +242,7 @@ analyseAll storageConfig indexSettings repositoryId = do
                         let mNewCommitsWithHashes = M.difference mCommitsBranchRecordsWithHashes mExistingCommitsWithHashes
                         let lNewCommits           = M.elems $ M.mapWithKey
                                                                 (\ hash (time, branches)
-                                                                   -> UDC.emptyCommit { UDC.repositoryId = repositoryId
-                                                                                      , UDC.hash         = hash
-                                                                                      , UDC.time         = time
-                                                                                      , UDC.branches     = Just branches })
+                                                                   -> UDC.makeCommit (Just branches) hash repositoryId time now)
                                                                 mNewCommitsWithHashes
                         lNewCommitsIds <- USEDC.bulkIndex storageConfig lNewCommits
 
