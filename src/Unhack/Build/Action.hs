@@ -9,9 +9,11 @@ module Unhack.Build.Action
 
 -- External dependencies.
 
-import           Data.Maybe               (fromJust, isNothing)
-import qualified Data.Text           as T (unpack)
-import           Database.Bloodhound
+import Data.Maybe          (fromJust, isNothing)
+import Data.Time           (UTCTime)
+import Database.Bloodhound
+
+import qualified Data.Text as T (unpack)
 
 -- Internal dependencies.
 
@@ -25,24 +27,24 @@ import qualified Unhack.Storage.ElasticSearch.Data.Commit as USEDC (get, setBuil
 
 -- Run a list of actions. The storage and repository configuration, together with the commit, are required as arguments
 -- because they may be needed for the execution of the action.
-run :: [UC.Action] -> USEC.StorageConfig -> UC.Config -> UDEIC.EmIssueCommit -> IO ()
-run actions storageConfig repoConfig commit = mapM_ (runOne' storageConfig repoConfig commit) actions
+run :: [UC.Action] -> USEC.StorageConfig -> UC.Config -> UDEIC.EmIssueCommit -> UTCTime -> IO ()
+run actions storageConfig repoConfig commit now = mapM_ (runOne' storageConfig repoConfig commit now) actions
 
 -- Functions/types for internal use.
 
 -- Run an individual action.
-runOne' :: USEC.StorageConfig -> UC.Config -> UDEIC.EmIssueCommit -> UC.Action -> IO (Reply)
-runOne' storageConfig repoConfig commit action = runOne action storageConfig repoConfig commit
+runOne' :: USEC.StorageConfig -> UC.Config -> UDEIC.EmIssueCommit -> UTCTime -> UC.Action -> IO (Reply)
+runOne' storageConfig repoConfig commit now action = runOne action storageConfig repoConfig commit now
 
-runOne :: UC.Action -> USEC.StorageConfig -> UC.Config -> UDEIC.EmIssueCommit -> IO (Reply)
-runOne action storageConfig repoConfig commit
-    | actionType == "status" = runStatus actionData storageConfig commit
+runOne :: UC.Action -> USEC.StorageConfig -> UC.Config -> UDEIC.EmIssueCommit -> UTCTime -> IO (Reply)
+runOne action storageConfig repoConfig commit now
+    | actionType == "status" = runStatus actionData storageConfig commit now
     where actionType = UC.acType action
           actionData = UC.acData action
 
 -- Run an action of type 'status'.
-runStatus :: UC.ActionData -> USEC.StorageConfig -> UDEIC.EmIssueCommit -> IO (Reply)
-runStatus actionData storageConfig commit = do
+runStatus :: UC.ActionData -> USEC.StorageConfig -> UDEIC.EmIssueCommit -> UTCTime -> IO (Reply)
+runStatus actionData storageConfig commit now = do
     -- We are passed the EmIssueCommit record version of the commit, but we need the full record in order to update the
     -- status.
     {- @Issue( "Implement updating only the 'buildStatus' field using the Update API"
@@ -57,7 +59,7 @@ runStatus actionData storageConfig commit = do
 
         False -> do
             let commitRecord = fromJust maybeCommit
-            USEDC.setBuildStatus storageConfig indexSettings commitId commitRecord status
+            USEDC.setBuildStatus storageConfig indexSettings commitId commitRecord status now
 
     where commitId      = UDEIC._id commit
           status        = UC.adsName actionData

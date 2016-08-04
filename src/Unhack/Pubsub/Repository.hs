@@ -400,7 +400,7 @@ analyseCommits storageConfig indexSettings repositoryId commitsIds = do
                 )
             -}
             let issuesWithRepoConfig = zipWith (\repoConfig (commit, commitIssues) -> (commit, repoConfig, commitIssues)) repoConfigs issues
-            rulesResult <- mapM_ (\(commit, repoConfig, commitIssues) -> UBR.apply storageConfig repoConfig commit commitIssues) issuesWithRepoConfig
+            rulesResult <- mapM_ (\(commit, repoConfig, commitIssues) -> UBR.apply storageConfig repoConfig commit commitIssues now) issuesWithRepoConfig
 
             -- If there are issues found, send them to Elastic Search.
             case (length issues) of

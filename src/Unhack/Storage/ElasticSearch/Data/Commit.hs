@@ -91,9 +91,9 @@ mget storageConfig commitsIds = do
           docsIds       = map DocId commitsIds
 
 -- Set the 'buildStatus' for a commit to the given value.
-setBuildStatus :: USEC.StorageConfig -> USEC.StorageIndexSettings -> T.Text -> UDC.Commit -> T.Text -> IO (Reply)
-setBuildStatus config indexSettings commitId commit buildStatus = USEO.updateDocument' config indexSettings updatedCommit (DocId commitId)
-    where updatedCommit = commit { UDC.buildStatus = buildStatus }
+setBuildStatus :: USEC.StorageConfig -> USEC.StorageIndexSettings -> T.Text -> UDC.Commit -> T.Text -> UTCTime -> IO (Reply)
+setBuildStatus config indexSettings commitId commit buildStatus now = USEO.updateDocument' config indexSettings updatedCommit (DocId commitId)
+    where updatedCommit = commit { UDC.buildStatus = buildStatus, UDC.updatedAt = now }
 
 -- Mark multiple commits as processed.
 bulkMarkProcessed :: USEC.StorageConfig -> [T.Text] -> UTCTime -> IO (Reply)
