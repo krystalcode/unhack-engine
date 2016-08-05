@@ -67,6 +67,15 @@ data StorageConfig = StorageConfig
 
 data StorageIndexSettings = StorageIndexSettings
     { key :: T.Text
+    {-
+      @Issue(
+        "Use the IndexName provided by Bloodhound instead of using Text for the
+        name of the index"
+        type="improvement"
+        priority="low"
+        labels="type system"
+      )
+    -}
     , name :: T.Text
     , shards :: Int
     , replicas :: Int
