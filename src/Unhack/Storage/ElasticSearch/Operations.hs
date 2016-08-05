@@ -18,11 +18,13 @@ module Unhack.Storage.ElasticSearch.Operations
        , mgetDocuments'
        , indexDocument'
        , updateDocument'
+       , deleteDocument'
        , bulkIndexDocuments'
        , bulkUpdateDocuments'
        , bulkIndexIssues
        , search'
        , searchDefaultParams
+       , deleteByQuery'
        , SearchParams(..)
        ) where
 
@@ -48,6 +50,7 @@ import Unhack.Storage.ElasticSearch.Mappings.Repository
 
 import qualified Unhack.Issue                        as UDI (Issue)
 import qualified Unhack.Storage.ElasticSearch.Config as USC
+import qualified Unhack.Storage.ElasticSearch.Types  as USET
 
 {-
     @Issue(
@@ -177,6 +180,11 @@ updateDocument' config settings@(USC.StorageIndexSettings key _ _ _) document id
     where withBH''        = withBH' config
           updateDocument'' = indexDocument (indexName settings)
 
+deleteDocument' :: USC.StorageConfig -> USET.DocType -> DocId -> IO (Reply)
+deleteDocument' config documentType id = withBH'' $ deleteDocument'' id
+    where withBH''         = withBH' config
+          deleteDocument'' = deleteDocument (USET.toIndex config documentType) (USET.toMapping documentType)
+
 bulkIndexDocuments' :: (ToJSON doc) => USC.StorageConfig -> USC.StorageIndexSettings -> [doc] -> IO (Reply)
 bulkIndexDocuments' config settings@(USC.StorageIndexSettings key _ _ _) docs = withBH' config $ bulk (fromList ops)
     where ops = [BulkIndex index documentMapping (DocId "") (toJSON doc) | doc <- docs]
@@ -213,13 +221,19 @@ bulkIndexIssues config settings issues = withBH' config $ bulk (fromList ops)
 search' :: USC.StorageConfig -> USC.StorageIndexSettings -> Query -> SearchParams -> IO (Reply)
 search' config settings query params = withBH' config $ searchByIndex index search
     where index  = indexName settings
-          search = Search (Just query) Nothing Nothing Nothing Nothing False (spFrom params) (spSize params) SearchTypeQueryThenFetch Nothing Nothing
+          search = Search (Just query) Nothing Nothing Nothing Nothing False (Just $ spFrom params) (Just $ spSize params) SearchTypeQueryThenFetch Nothing Nothing
 
 data SearchParams = SearchParams { spFrom :: From
                                  , spSize :: Size }
 
 searchDefaultParams = SearchParams { spFrom = From 0
                                    , spSize = Size 10 }
+
+deleteByQuery' :: USC.StorageConfig -> [USET.DocType] -> Query -> IO (Reply)
+deleteByQuery' storageConfig types query = withBH' storageConfig $ deleteByQuery maybeIndices maybeMappings searchQuery
+    where searchQuery   = mkSearch (Just query) Nothing
+          maybeIndices  = Just $ map (USET.toIndex storageConfig) types
+          maybeMappings = Just $ map USET.toMapping types
 
 -- Functions/types for internal use.
 

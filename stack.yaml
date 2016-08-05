@@ -11,7 +11,7 @@ packages:
       commit : efdb43e9ee1865cd5cd74c20f9928f9cc9b4094e
   - location :
       git    : https://github.com/krystalcode/bloodhound.git
-      commit : f85e046890f210e488adf54992e830b63196a369
+      commit : 9c5adc726fa846f0ea9b72841f1dd262d025305c
   - location :
       git    : https://github.com/informatikr/hedis.git
       commit : e86143db2d4e76fe85340c78c01da7bc3722ae5a

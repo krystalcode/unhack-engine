@@ -8,6 +8,8 @@ module Unhack.Pubsub.Dispatcher
 
 -- External dependencies.
 
+import Database.Bloodhound.Types (DocId(..))
+
 import qualified Data.ByteString.Char8 as BS (split, unpack, ByteString)
 import qualified Data.List             as L  (drop)
 import qualified Data.Text             as T  (pack)
@@ -15,6 +17,7 @@ import qualified Data.Text             as T  (pack)
 -- Internal dependencies.
 
 import qualified Unhack.Pubsub.Repository            as UPR  (analyseAll, analyseCommits, clone, updateHeads)
+import qualified Unhack.Pubsub.Repository.Delete     as UPRD (delete)
 import qualified Unhack.Storage.ElasticSearch.Config as USEC (indexSettingsFromConfig, StorageConfig, StorageIndexSettings)
 
 
@@ -63,6 +66,15 @@ dispatch config message = do
             print $ "Dispatching message of type '" ++ action ++ "'"
             UPR.updateHeads config (USEC.indexSettingsFromConfig "repository" config) repositoryId
             print $ "Action of type '" ++ action ++ "' performed"
+
+        -- Request to delete a repository and all related data e.g. branches,
+        -- commits, issues.
+        "repositories_delete" -> do
+            let repositoryId = T.pack (BS.unpack $ messageParts !! 1)
+            print $ "Dispatching message of type '" ++ action ++ "'"
+            UPRD.delete config (DocId repositoryId)
+            print $ "Action of type '" ++ action ++ "' performed"
+
         _ -> error $ concat ["The pubsub message type '", action, "' is not recognised."]
 
 

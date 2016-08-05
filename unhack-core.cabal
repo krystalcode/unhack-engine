@@ -40,6 +40,7 @@ library
                      , Unhack.Pubsub.Dispatcher
                      , Unhack.Pubsub.Publish
                      , Unhack.Pubsub.Repository
+                     , Unhack.Pubsub.Repository.Delete
                      , Unhack.Pubsub.Router
                      , Unhack.Parser
                      , Unhack.Process
@@ -57,6 +58,7 @@ library
                      , Unhack.Storage.ElasticSearch.Mappings.Project
                      , Unhack.Storage.ElasticSearch.Mappings.Repository
                      , Unhack.Storage.ElasticSearch.Operations
+                     , Unhack.Storage.ElasticSearch.Types
                      , Unhack.Types
                      , Unhack.Util
   build-depends:       aeson >= 0.10.0.0 && < 1
