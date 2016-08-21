@@ -58,7 +58,8 @@ trimIssues xs = map (takeWhile (/=')') . tail . dropWhile (/='(')) xs
 extractProperties :: String -> IssueProperties
 extractProperties issue
     = IssueProperties
-        { labels   = extractMultiValueProperty issue "labels"
+        { notes    = extractProperty issue "notes"
+        , labels   = extractMultiValueProperty issue "labels"
         , priority = extractProperty issue "priority"
         , title    = extractTitle issue
         , type'    = extractProperty issue "type"

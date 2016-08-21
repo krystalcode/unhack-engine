@@ -60,7 +60,10 @@ instance ToJSON IssueMapping where
                 , "properties" .= object
                     [ "type" .= ("nested" :: T.Text)
                     , "properties" .= object
-                        [ "labels" .= object
+                        [ "notes" .= object
+                            [ "type"  .= ("string"       :: T.Text)
+                            , "index" .= ("analyzed"     :: T.Text) ]
+                        , "labels" .= object
                             [ "type"  .= ("string"       :: T.Text)
                             , "index" .= ("not_analyzed" :: T.Text) ]
                         , "priority" .= object

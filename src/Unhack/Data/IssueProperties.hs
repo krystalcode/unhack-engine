@@ -26,6 +26,7 @@ import Unhack.Util (omitNulls)
 
 data IssueProperties = IssueProperties
     { labels   :: Maybe [T.Text]
+    , notes    :: Maybe T.Text
     , priority :: Maybe T.Text
     , title    :: T.Text
     , type'    :: Maybe T.Text
@@ -56,7 +57,8 @@ accessSingleValueProperty issueProperties "type"     = type' issueProperties
 -- JSON conversions.
 instance FromJSON IssueProperties where
     parseJSON (Object v) =
-        IssueProperties <$> v .:? "labels"   .!= Nothing
+        IssueProperties <$> v .:? "notes"    .!= Nothing
+                        <*> v .:? "labels"   .!= Nothing
                         <*> v .:? "priority" .!= Nothing
                         <*> v .:  "title"
                         <*> v .:? "type"     .!= Nothing
@@ -64,7 +66,8 @@ instance FromJSON IssueProperties where
 
 instance ToJSON IssueProperties where
     toJSON IssueProperties {..} = omitNulls
-        [ "labels"   .= labels
+        [ "notes"    .= notes
+        , "labels"   .= labels
         , "priority" .= priority
         , "title"    .= title
         , "type"     .= type'
