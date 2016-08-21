@@ -47,6 +47,7 @@ library
                      , Unhack.Data.EmIssueCommit
                      , Unhack.Data.Repository
                      , Unhack.Data.EmbeddedRepository
+                     , Unhack.Parser.Version2
                      , Unhack.Storage.ElasticSearch.Config
                      , Unhack.Storage.ElasticSearch.Data.Branch
                      , Unhack.Storage.ElasticSearch.Data.Commit
@@ -73,6 +74,7 @@ library
                      , Glob >= 0.7.5 && < 1
                      , hedis >= 0.7.6 && < 1
                      , http-client >= 0.4.26.2 && < 1
+                     , mtl >= 2.2.1 && < 3
                      , process >= 1.2.3.0 && < 2
                      , random >= 1.1 && < 2
                      , regex-pcre >= 0.94.4 && < 1
